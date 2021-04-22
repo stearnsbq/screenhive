@@ -1,7 +1,4 @@
 import { Resolver, Query, Mutation, Arg, Ctx, ResolverInterface } from "type-graphql";
-import { getRepository } from "typeorm";
-import { AuthPayload } from "../entities/AuthPayload";
-import { User } from "../entities/User";
 import argon2 from 'argon2'
 import jsonwebtoken from 'jsonwebtoken'
 import { UserService } from "../services/UserService";

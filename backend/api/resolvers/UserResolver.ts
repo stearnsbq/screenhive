@@ -32,8 +32,13 @@ export class UserResolver {
 
     ctx.res.status(401);
     throw new Error("Not Authenticated");
-
-
   }
+
+
+//   @Mutation()
+//   async updateUser(@Ctx() ctx: any){
+
+//   }
+
 
 }

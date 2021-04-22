@@ -2,6 +2,8 @@ import { Service, Inject } from "typedi";
 import { getRepository, Repository } from "typeorm";
 import { User } from "../entities/User";
 import argon2 from 'argon2'
+
+
 @Service()
 export class UserService {
     private userRepo : Repository<User>;
@@ -22,6 +24,7 @@ export class UserService {
             newUser.password = await argon2.hash(password);
             newUser.registered = new Date();
             await this.userRepo.save(newUser);
+            return newUser;
 
     }
 
