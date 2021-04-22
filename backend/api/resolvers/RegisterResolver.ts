@@ -22,7 +22,7 @@ export class RegisterResolver{
     @Mutation(returns => User)
     public async register(@Arg("username") username : string, @Arg("password") password : string, @Arg("email") email : string, @Arg("dob") dob : number, @Ctx() ctx: any){
         try{
-            return  await this.userService.createUser(email, username, password, dob);
+            return await this.userService.createUser(email, username, password, dob);
         }catch(err){
             ctx.res.status(400)
             throw new Error("Failed to login!")
