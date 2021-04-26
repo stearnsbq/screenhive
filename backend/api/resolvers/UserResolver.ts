@@ -1,10 +1,16 @@
-import { Resolver, Query, Mutation, Ctx } from "type-graphql";
+import { Resolver, Query, Mutation, Ctx, Arg } from "type-graphql";
 import { User } from "../entities/User";
 import { Service } from "typedi";
+import { UserService } from "../services/UserService";
+import { Role } from "../entities/Role";
 
 @Service()
 @Resolver(of => User)
 export class UserResolver {
+
+  constructor(private userService: UserService){
+
+  }
 
 
   @Query(returns => [User])
@@ -16,7 +22,7 @@ export class UserResolver {
         throw new Error("Not an admin!");
     }
 
-    return await User.find();
+    return await this.userService.getUsers();
   }
 
 
@@ -24,9 +30,8 @@ export class UserResolver {
   async user(@Ctx() ctx: any) {
     const user = ctx.user;
 
-
     if(user){
-        return await User.findOne({id: user.id})
+        return await this.userService.getUser({id: user.id})
     }
 
 
@@ -35,10 +40,23 @@ export class UserResolver {
   }
 
 
-//   @Mutation()
-//   async updateUser(@Ctx() ctx: any){
+  @Mutation(returns => User)
+  async updateRoles(@Arg("roles") roles: Role[], @Ctx() ctx: any){
+    const user = ctx.user;
 
-//   }
+
+    if(user){
+
+      const usr = await this.userService.getUser({id: user.id})
+
+      usr?.roles.push(...roles);
+
+      return usr;
+    }
+
+    ctx.res.status(401);
+    throw new Error("Not Authenticated");
+  }
 
 
 }

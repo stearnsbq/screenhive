@@ -11,6 +11,10 @@ export class UserService {
         this.userRepo = getRepository(User);
     }
 
+    public getUsers(){
+        return this.userRepo.find();
+    }
+
     public getUser(fields: {username?: string, email?: string, id?: number}){
         return this.userRepo.findOne(fields);
     }

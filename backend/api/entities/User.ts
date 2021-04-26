@@ -1,7 +1,7 @@
 
 import { Field, ID, ObjectType } from "type-graphql";
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from "typeorm";
-
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToMany, JoinTable } from "typeorm";
+import { Role } from "./Role";
 
 
 @ObjectType()
@@ -13,15 +13,11 @@ export class User extends BaseEntity{
     public id!: number;
 
     @Field(() => String)
-    @Column({default: "user"})
-    public level!: string;
-
-    @Field(() => String)
-    @Column({unique: true})
+    @Column({nullable: false, unique: true})
     public username!: string;
 
     @Field(() => String)
-    @Column({unique: true})
+    @Column({nullable: false, unique: true})
     public email!: string;
 
     @Field(() => String)
@@ -29,21 +25,24 @@ export class User extends BaseEntity{
     public password!: string;
 
     @Field(() => Date)
-    @Column()
+    @Column({nullable: false})
     public dob!: Date;
 
     @Field(() => Date)
-    @Column()
+    @Column({nullable: false})
     public registered!: Date;
 
     @Field(() => Boolean)
     @Column({default: false})
     public verified!: boolean;
 
+    @Field(() => Date)
+    @Column()
+    public lastLogin!: Date;
 
-    @Field(() => Boolean)
-    @Column({default: false})
-    public premium!: boolean;
 
+    @ManyToMany(() => Role)
+    @JoinTable()
+    public roles!: Role[];
 
 }
