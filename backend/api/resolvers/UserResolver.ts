@@ -1,8 +1,7 @@
-import { Resolver, Query, Mutation, Ctx, Arg } from "type-graphql";
-import { User } from "../entities/User";
+import { Resolver, Query, Mutation, Ctx, Arg, Authorized } from "type-graphql";
+import { Role, User } from "../entities/User";
 import { Service } from "typedi";
 import { UserService } from "../services/UserService";
-import { Role } from "../entities/Role";
 
 @Service()
 @Resolver(of => User)
@@ -12,16 +11,9 @@ export class UserResolver {
 
   }
 
-
+  @Authorized<Role>(Role.Admin, Role.Superuser)
   @Query(returns => [User])
   async users(@Ctx() ctx: any) {
-    const user = ctx.user;
-
-    if(user.level != "admin"){
-        ctx.res.status(401);
-        throw new Error("Not an admin!");
-    }
-
     return await this.userService.getUsers();
   }
 
@@ -39,23 +31,28 @@ export class UserResolver {
     throw new Error("Not Authenticated");
   }
 
-
+  @Authorized<Role>(Role.Admin, Role.Superuser)
   @Mutation(returns => User)
-  async updateRoles(@Arg("roles") roles: Role[], @Ctx() ctx: any){
+  async updateRoles(@Arg("roles") role: Role, @Ctx() ctx: any){
     const user = ctx.user;
 
+    try{
 
-    if(user){
+        const usr = await this.userService.getUser({id: user.id})
 
-      const usr = await this.userService.getUser({id: user.id})
+        usr.role = role;
 
-      usr?.roles.push(...roles);
+        await usr?.save();
+    
+        return usr;
 
-      return usr;
+
+    }catch(err){
+      ctx.res.status(401);
+      throw new Error("Not Authenticated");
     }
 
-    ctx.res.status(401);
-    throw new Error("Not Authenticated");
+
   }
 
 

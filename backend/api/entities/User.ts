@@ -1,48 +1,45 @@
 
 import { Field, ID, ObjectType } from "type-graphql";
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToMany, JoinTable } from "typeorm";
-import { Role } from "./Role";
+import { RevokedToken } from "./RevokedToken";
+
+
+export enum Role{
+    User = 0,
+    Moderator = 1,
+    Admin = 2,
+    Superuser = 3
+}
 
 
 @ObjectType()
-@Entity()
-export class User extends BaseEntity{
+export class User{
 
     @Field(() => ID)
-    @PrimaryGeneratedColumn()
     public id!: number;
 
     @Field(() => String)
-    @Column({nullable: false, unique: true})
     public username!: string;
 
     @Field(() => String)
-    @Column({nullable: false, unique: true})
     public email!: string;
 
     @Field(() => String)
-    @Column()
     public password!: string;
 
     @Field(() => Date)
-    @Column({nullable: false})
     public dob!: Date;
 
     @Field(() => Date)
-    @Column({nullable: false})
     public registered!: Date;
 
     @Field(() => Boolean)
-    @Column({default: false})
     public verified!: boolean;
 
     @Field(() => Date)
-    @Column()
     public lastLogin!: Date;
 
+    @Field(() => String)
+    public role!: Role;
 
-    @ManyToMany(() => Role)
-    @JoinTable()
-    public roles!: Role[];
-
+    public revokedTokens! : RevokedToken[];
 }

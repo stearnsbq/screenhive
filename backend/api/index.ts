@@ -1,8 +1,6 @@
-import { attachControllers } from '@decorators/express';
 import express, { Router } from 'express'
 import {json} from 'body-parser';
 import {config} from 'dotenv';
-import { createConnection } from 'typeorm';
 import { buildSchema } from 'type-graphql';
 import { UserResolver } from './resolvers/UserResolver';
 import { LoginResolver } from './resolvers/LoginResolver';
@@ -11,6 +9,9 @@ import { RegisterResolver } from './resolvers/RegisterResolver';
 const jwt = require('express-jwt')
 const { graphqlHTTP } = require('express-graphql');
 const cookieParser = require('cookie-parser');
+import "reflect-metadata";
+import { PrismaClient } from '@prisma/client';
+
 
 async function main(){
 
@@ -22,12 +23,19 @@ async function main(){
     app.use(cookieParser());
 
 
-    const connection = await createConnection()
     const schema = await buildSchema({
         resolvers: [UserResolver, LoginResolver, RegisterResolver], 
-        container: Container
-    })
+        container: Container,
+        authChecker: (
+            { root, args, context, info },
+            roles,
+          ) => {
 
+            const user = context.user;
+
+            return roles.some((element) => element === user.role); 
+          }
+    })
 
     const authMiddleware = jwt({
         secret: process.env.JWT_SECRET,
@@ -35,10 +43,9 @@ async function main(){
         algorithms: ['HS256']
     })
 
-
     app.use('/graphql', authMiddleware, graphqlHTTP((_: any, res: any, req: any) => ({
-        schema: schema,
-        context: {res, user: res.req.user}
+        schema,
+        context: {res, user: res.req.user, cookies: res.req.cookies, prisma: new PrismaClient() }
     })))
 
     app.listen(8080, () => {
