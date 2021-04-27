@@ -1,40 +1,54 @@
 import { Service, Inject } from "typedi";
-import { User } from "../entities/User";
 import argon2 from 'argon2'
-import { RevokedToken } from "../entities/RevokedToken";
-
+import { PrismaService } from "./PrismaService";
+import { PrismaClient } from ".prisma/client";
+import { User } from "@generated/type-graphql";
+import { Role } from "../enum/Role";
 
 @Service()
 export class UserService {
-    private userRepo : Repository<User>;
-    constructor(){
-        this.userRepo = getRepository(User);
+    private prisma :  PrismaClient;
+    constructor(private prismaService : PrismaService){
+        this.prisma = prismaService.prisma;
     }
 
     public getUsers(){
-        return this.userRepo.find();
+        return this.prisma.user.findMany();
     }
 
-    public getUser(fields: {username?: string, email?: string, id?: number}){
-        return this.userRepo.findOneOrFail(fields);
+    public getUser(fields: {username?: string, email?: string, id?: number}) {
+        return this.prisma.user.findFirst({where: {
+            ...fields
+        }})
     }
+    
 
     public async createUser(email : string, username : string, password : string, dob: number){
-            const newUser = this.userRepo.create();
+            const newUser = await this.prisma.user.create({
+                data:{
+                    email,
+                    username,
+                    dob: new Date(dob),
+                    password: await argon2.hash(password),
+                    registered: new Date(),
+                    lastLogin: new Date()
+                }
+            })
 
-            newUser.email = email;
-            newUser.username = username;
-            newUser.dob = new Date(dob);
-            newUser.password = await argon2.hash(password);
-            newUser.registered = new Date();
-            newUser.lastLogin = new Date();
-            await this.userRepo.save(newUser);
+
             return newUser;
-
     }
 
-    public async saveUser(user: User){
-        this.userRepo.save(user);
+
+    public saveUser(user: User){
+       return this.prisma.user.update({
+            where:{
+                id: user.id
+            },
+            data:{
+                ...user
+            }
+        })
     }
 
 

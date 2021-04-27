@@ -1,5 +1,4 @@
 import { Arg, Ctx, Field, InputType, Mutation, Resolver } from "type-graphql";
-import { User } from "../entities/User";
 import { UserService } from "../services/UserService";
 import { Service } from "typedi";
 

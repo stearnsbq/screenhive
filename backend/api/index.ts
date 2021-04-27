@@ -1,59 +1,52 @@
-import express, { Router } from 'express'
-import {json} from 'body-parser';
-import {config} from 'dotenv';
+import 'reflect-metadata';
+import express, { Router } from 'express';
+import { json } from 'body-parser';
+import { config } from 'dotenv';
 import { buildSchema } from 'type-graphql';
 import { UserResolver } from './resolvers/UserResolver';
 import { LoginResolver } from './resolvers/LoginResolver';
-import { Container } from "typedi";
+import { Container } from 'typedi';
 import { RegisterResolver } from './resolvers/RegisterResolver';
-const jwt = require('express-jwt')
+const jwt = require('express-jwt');
 const { graphqlHTTP } = require('express-graphql');
 const cookieParser = require('cookie-parser');
-import "reflect-metadata";
-import { PrismaClient } from '@prisma/client';
 
+async function main() {
+	config(); // dot env config setup
 
-async function main(){
+	const app = express(); // create the express instance
 
-    config(); // dot env config setup
+	app.use(json());
+	app.use(cookieParser());
 
-    const app = express() // create the express instance
+	const schema = await buildSchema({
+		resolvers: [ UserResolver, LoginResolver, RegisterResolver ],
+		container: Container,
+		authChecker: ({ root, args, context, info }, roles) => {
+			const user = context.user;
 
-    app.use(json());
-    app.use(cookieParser());
+			return roles.some((element) => element === user.role);
+		}
+	});
 
+	const authMiddleware = jwt({
+		secret: process.env.JWT_SECRET,
+		credentialsRequired: false,
+		algorithms: [ 'HS256' ]
+	});
 
-    const schema = await buildSchema({
-        resolvers: [UserResolver, LoginResolver, RegisterResolver], 
-        container: Container,
-        authChecker: (
-            { root, args, context, info },
-            roles,
-          ) => {
+	app.use(
+		'/graphql',
+		authMiddleware,
+		graphqlHTTP((_: any, res: any, req: any) => ({
+			schema,
+			context: { res, user: res.req.user, cookies: res.req.cookies }
+		}))
+	);
 
-            const user = context.user;
-
-            return roles.some((element) => element === user.role); 
-          }
-    })
-
-    const authMiddleware = jwt({
-        secret: process.env.JWT_SECRET,
-        credentialsRequired: false,
-        algorithms: ['HS256']
-    })
-
-    app.use('/graphql', authMiddleware, graphqlHTTP((_: any, res: any, req: any) => ({
-        schema,
-        context: {res, user: res.req.user, cookies: res.req.cookies, prisma: new PrismaClient() }
-    })))
-
-    app.listen(8080, () => {
-        console.log("running!")
-    })
-
+	app.listen(8080, () => {
+		console.log('running!');
+	});
 }
 
-main()
-
-
+main();
