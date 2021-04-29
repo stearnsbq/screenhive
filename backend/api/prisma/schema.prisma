@@ -14,8 +14,8 @@ datasource db {
 
 model User{
   id Int @id @default(autoincrement())
-  username String @db.VarChar(50)
-  email String @db.VarChar(100)
+  username String @db.VarChar(50) @unique
+  email String @db.VarChar(100) @unique
   password String @db.VarChar(255)
   dob DateTime @db.Date
   registered DateTime @db.Date
@@ -23,13 +23,62 @@ model User{
   lastLogin DateTime @db.Timestamp()
   role Int @db.SmallInt @default(0)
   revokedTokens RevokedToken[]
+  verificationTokens VerificationToken[]
+  premiumSubscriptions PremiumSubscription[]
+  accountOffenses AccountOffense[]
+  reports Report[] @relation("reporter")
+  reportsAgainstUser Report[] @relation("reportee")
 }
 
 
 model RevokedToken{
-  userId Int 
+  userId Int @db.Integer
   token String  @db.VarChar(255)
   expiry DateTime @db.Timestamp()
   user User @relation(fields: [userId], references: [id])
   @@id([userId, token])
+}
+
+
+
+model VerificationToken{
+  userId Int  @db.Integer
+  token String  @db.VarChar(255)
+  expiry DateTime @db.Timestamp()
+  user User @relation(fields: [userId], references: [id])
+  @@id([userId, token])
+}
+
+
+
+model PremiumSubscription {
+  id Int  @id @default(autoincrement())
+  userId Int @db.Integer
+  start DateTime @db.Date
+  end DateTime @db.Date
+  recurring Boolean @db.Boolean
+  user User @relation(fields: [userId], references: [id])
+}
+
+
+model AccountOffense {
+  id Int  @id @default(autoincrement())
+  userId Int @db.Integer
+  type String @db.VarChar(50)
+  description String @db.Text
+  start DateTime @db.Date
+  end DateTime @db.Date
+  user User @relation(fields: [userId], references: [id])
+}
+
+
+
+model Report{
+  id Int @id @default(autoincrement())
+  reporter Int @db.Integer
+  reportee Int @db.Integer
+  type String @db.VarChar(50)
+  reason String @db.Text
+  reporterUser User @relation("reporter", fields: [reporter], references: [id])
+  reporteeUser User @relation("reportee", fields: [reportee], references: [id])
 }

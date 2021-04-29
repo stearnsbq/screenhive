@@ -1,67 +1,62 @@
-import { Resolver, Query, Mutation, Ctx, Arg, Authorized } from "type-graphql";
-import { Service } from "typedi";
-import { UserService } from "../services/UserService";
-import { User, RevokedToken } from "@generated/type-graphql";
-import { Role } from "../enum/Role";
-
-
-
+import { Resolver, Query, Mutation, Ctx, Arg, Authorized, FieldResolver, Root, ResolverInterface } from 'type-graphql';
+import { Service } from 'typedi';
+import { User, RevokedToken } from '@generated/type-graphql';
+import { Role } from '../enum/Role';
+import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
 
 @Service()
-@Resolver(of => User)
+@Resolver((of) => User)
 export class UserResolver {
-
-  constructor(private userService: UserService){
-
-  }
-
-  @Authorized<Role>(Role.Admin, Role.SuperAdmin)
-  @Query(returns => [User])
-  async users(@Ctx() ctx: any) {
-    return await this.userService.getUsers();
-  }
+	constructor() {}
 
 
-  @Query(returns => User)
-  async user(@Ctx() ctx: any) {
-    const user = ctx.user;
 
-    if(user){
-        return await this.userService.getUser({id: user.id})
-    }
-
-
-    ctx.res.status(401);
-    throw new Error("Not Authenticated");
-  }
-
-  @Authorized<Role>(Role.Admin, Role.SuperAdmin)
-  @Mutation(returns => User)
-  async updateRoles(@Arg("roles") role: Role, @Ctx() ctx: any){
-    const user = ctx.user;
-
-    try{
-
-        const usr = await this.userService.getUser({id: user.id})
-
-        if(usr){
-
-          usr.role = role;
-
-          await this.userService.saveUser(usr)
-      
-          return usr;
-        }
-
-        throw new Error("User Does Not Exist!");
-
-    }catch(err){
-      ctx.res.status(401);
-      throw new Error("Not Authenticated");
-    }
+	@FieldResolver(() => [RevokedToken])
+	public async revokedTokens(@Root() user : User, @Ctx() {prisma} : {prisma: PrismaClient}){
+		return await prisma.revokedToken.findMany({
+			where:{
+				userId: user.id
+			}
+		})
+	}
 
 
-  }
+	@Authorized<Role>(Role.Admin, Role.SuperAdmin)
+	@Query((returns) => [ User ])
+	async users(@Ctx() {prisma}: {prisma: PrismaClient}) {
+		return prisma.user.findMany();
+	}
 
+	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
+	@Query((returns) => User)
+	async user(@Ctx() {user, prisma}: {user: any, prisma: PrismaClient}) {
+		return await prisma.user.findUnique({
+			where:{
+				id: user.id
+			}
+		})
+	}
 
+	@Authorized<Role>(Role.Admin, Role.SuperAdmin)
+	@Mutation((returns) => User)
+	async updateRole(@Arg('role') role: Role, @Ctx() {user, res, prisma}: {user: any, res: Response, prisma: PrismaClient}) {
+
+		try {
+
+			return await prisma.user.update({
+				where:{
+					id: user.id
+				},
+				data:{
+					role: role
+				}
+			})
+			
+
+		} catch (err) {
+			res.status(401);
+			throw new Error('Not Authenticated');
+		}
+	}
 }

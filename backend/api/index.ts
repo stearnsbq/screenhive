@@ -5,11 +5,16 @@ import { config } from 'dotenv';
 import { buildSchema } from 'type-graphql';
 import { UserResolver } from './resolvers/UserResolver';
 import { LoginResolver } from './resolvers/LoginResolver';
-import { Container } from 'typedi';
 import { RegisterResolver } from './resolvers/RegisterResolver';
-const jwt = require('express-jwt');
-const { graphqlHTTP } = require('express-graphql');
+import jsonwebtoken from 'jsonwebtoken'
+import { PrismaClient } from '.prisma/client';
+import { ApolloServer } from "apollo-server-express";
+import http from 'http'
+import {Container} from 'typedi';
+import cors from 'cors';
 const cookieParser = require('cookie-parser');
+
+
 
 async function main() {
 	config(); // dot env config setup
@@ -18,35 +23,44 @@ async function main() {
 
 	app.use(json());
 	app.use(cookieParser());
+	app.use(cors({origin: "*"}))
 
 	const schema = await buildSchema({
-		resolvers: [ UserResolver, LoginResolver, RegisterResolver ],
+		resolvers: [ LoginResolver, RegisterResolver, UserResolver ],
 		container: Container,
 		authChecker: ({ root, args, context, info }, roles) => {
-			const user = context.user;
+            const {authorization} = context.req.headers;
 
-			return roles.some((element) => element === user.role);
+            const token = authorization.split(" ")[1];
+
+            try{
+               const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as any;
+
+			   context.user = decoded;
+
+			   return roles.some((element) => element === decoded.role)
+            }catch(err){
+				context.res.status(401);
+                return false;
+            }
+
 		}
 	});
 
-	const authMiddleware = jwt({
-		secret: process.env.JWT_SECRET,
-		credentialsRequired: false,
-		algorithms: [ 'HS256' ]
+	const prisma = new PrismaClient();
+
+	const server = new ApolloServer({
+		schema,
+		context: ({res, req}) => ({ res: res, req: req, cookies: req?.cookies || {}, prisma }),
+		playground: true,
 	});
 
-	app.use(
-		'/graphql',
-		authMiddleware,
-		graphqlHTTP((_: any, res: any, req: any) => ({
-			schema,
-			context: { res, user: res.req.user, cookies: res.req.cookies }
-		}))
-	);
+	server.applyMiddleware({app, path: "/graphql"})
+	const httpServer = http.createServer(app);
 
-	app.listen(8080, () => {
-		console.log('running!');
-	});
+	httpServer.listen(8080, () => {
+		console.log("Listening!")		
+	})
 }
 
 main();

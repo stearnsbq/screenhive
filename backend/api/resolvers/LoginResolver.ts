@@ -1,25 +1,30 @@
 import { Resolver, Query, Mutation, Arg, Ctx, ResolverInterface, Authorized } from 'type-graphql';
 import argon2 from 'argon2';
 import jsonwebtoken from 'jsonwebtoken';
-import { UserService } from '../services/UserService';
 import { Service } from 'typedi';
-import { RevokedTokenService } from '../services/RevokedTokenService';
 import { Role } from '../enum/Role';
+import { Response } from 'express';
+import { Prisma, PrismaClient } from '.prisma/client';
 
 @Service()
 @Resolver()
 export class LoginResolver {
-	constructor(private userService: UserService, private revokedTokensService: RevokedTokenService) {}
+	constructor() {}
+
+
+
+
 
 	@Query(() => String)
-	async getNewAccessToken(@Ctx() ctx: any) {
-		const cookies = ctx.cookies;
+	async getNewAccessToken(@Ctx() {cookies, res, prisma}: {cookies: any, res: Response, prisma: PrismaClient}) {
 		try {
-			if (await this.revokedTokensService.isTokenRevoked(cookies.refresh_token)) {
+			const token  = cookies.refresh_token;
+
+			if (await prisma.revokedToken.count({where:{token: token.split('.')[2]}}) > 0)  {
 				throw new Error('Revoked Token!');
 			}
 
-			const refresh_token = jsonwebtoken.verify(cookies.refresh_token, process.env.JWT_SECRET as string) as {
+			const refresh_token = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as {
 				id: number;
 			};
 
@@ -29,19 +34,23 @@ export class LoginResolver {
 				audience: 'screenhive_users'
 			});
 		} catch (err) {
-			ctx.res.status(401);
+			res.status(401);
 			throw new Error('Not Authenticated!');
 		}
 	}
 
 	@Mutation(() => String)
-	async login(@Arg('username') username: string, @Arg('password') password: string, @Ctx() ctx: any) {
-		const res = ctx.res;
+	async login(@Arg('username') username: string, @Arg('password') password: string, @Ctx() {res, prisma}: {res: Response, prisma: PrismaClient}) {
 
-		try {
-			const user = await this.userService.getUser({ username });
+		try{
+			const user = await prisma.user.findUnique({
+				where:{
+					username
+				}
+			})
 
-			if (user && (await argon2.verify(user.password, password))) {
+
+			if (user && await argon2.verify(user.password, password)) {
 				res.cookie(
 					'refresh_token',
 					jsonwebtoken.sign({ id: user.id }, process.env.JWT_SECRET as string, {
@@ -50,38 +59,42 @@ export class LoginResolver {
 						audience: 'screenhive_users',
 						algorithm: 'HS256'
 					}),
-					{ maxAge: 604800, httpOnly: true }
+					{ maxAge: 604800, httpOnly: true, domain: ".app.localhost" }
 				);
 
-				user.lastLogin = new Date();
 
-				await this.userService.saveUser(user);
+				await prisma.user.update({
+					where:{
+						username
+					},
+					data:{
+						lastLogin: new Date()
+					}
+				});
+
 
 				return jsonwebtoken.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, {
-					expiresIn: '15m',
+					expiresIn: '15y',
 					issuer: 'screenhive.io',
 					audience: 'screenhive_users'
 				});
 			}
-		} catch (err) {
-			console.log(err);
-			ctx.res.status(401);
+
+			throw new Error();
+		}catch(err){
+			res.status(401);
 			throw new Error('Invalid Username or Password');
 		}
 	}
 
 	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
 	@Mutation(() => Boolean)
-	async logout(@Ctx() ctx: any) {
-		const cookies = ctx.cookies;
-		const user = ctx.user;
-
+	async logout(@Ctx() {cookies, user, prisma}: {cookies: any, user: any, prisma: PrismaClient}) {
 		try {
-			if (jsonwebtoken.verify(cookies.refresh_token, process.env.JWT_SECRET as string)) {
-				return await this.revokedTokensService.revokeToken(user.id, cookies.refresh_token);
-			}
 
-			return false;
+			const decoded = jsonwebtoken.verify(cookies.refresh_token, process.env.JWT_SECRET as string) as any;
+
+			return  decoded && !!(await prisma.revokedToken.create({data: {userId: user.id, token: cookies.refresh_token.split(".")[2], expiry: new Date(decoded.exp * 1000)}})) 
 		} catch (err) {
 			return false;
 		}
