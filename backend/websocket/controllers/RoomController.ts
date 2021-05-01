@@ -7,14 +7,30 @@ import {
     OnMessage,
     SocketIO,
   } from 'socket-controllers';
-
+  import { v4 as uuidv4 } from 'uuid';
 
 @SocketController()
 export class RoomController {
 
+  constructor(){
+
+  }
+
+
+
+  @OnMessage("getRooms")
+  onGetRooms(@SocketIO() io: any){
+
+  }
+
 
   @OnMessage("createRoom")
-  onCreateRoom(@SocketIO() io: any, @MessageBody() message: {roomID: string, password?:string}){
+  onCreateRoom(@SocketIO() io: any, @ConnectedSocket() socket: any, @MessageBody() message: {roomID: string, password?:string}){
+
+    
+
+
+
 
   }
 
