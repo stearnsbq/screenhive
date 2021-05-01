@@ -31,14 +31,12 @@ async function main() {
 		authChecker: ({ root, args, context, info }, roles) => {
             const {authorization} = context.req.headers;
 
-            const token = authorization.split(" ")[1];
+            const token = authorization.split(" ")[1]; // replace this with a regex
 
             try{
-               const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as any;
+			   context.user = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as any;;
 
-			   context.user = decoded;
-
-			   return roles.some((element) => element === decoded.role)
+			   return roles.some((element) => element === context.user.role)
             }catch(err){
 				context.res.status(401);
                 return false;

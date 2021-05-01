@@ -28,8 +28,8 @@ model User{
   accountOffenses AccountOffense[]
   reports Report[] @relation("reporter")
   reportsAgainstUser Report[] @relation("reportee")
+  rooms RoomUsers[]
 }
-
 
 model RevokedToken{
   userId Int @db.Integer
@@ -39,8 +39,6 @@ model RevokedToken{
   @@id([userId, token])
 }
 
-
-
 model VerificationToken{
   userId Int  @db.Integer
   token String  @db.VarChar(255)
@@ -48,8 +46,6 @@ model VerificationToken{
   user User @relation(fields: [userId], references: [id])
   @@id([userId, token])
 }
-
-
 
 model PremiumSubscription {
   id Int  @id @default(autoincrement())
@@ -59,7 +55,6 @@ model PremiumSubscription {
   recurring Boolean @db.Boolean
   user User @relation(fields: [userId], references: [id])
 }
-
 
 model AccountOffense {
   id Int  @id @default(autoincrement())
@@ -71,8 +66,6 @@ model AccountOffense {
   user User @relation(fields: [userId], references: [id])
 }
 
-
-
 model Report{
   id Int @id @default(autoincrement())
   reporter Int @db.Integer
@@ -81,4 +74,20 @@ model Report{
   reason String @db.Text
   reporterUser User @relation("reporter", fields: [reporter], references: [id])
   reporteeUser User @relation("reportee", fields: [reportee], references: [id])
+}
+
+model Room{
+  id Int @id@default(autoincrement())
+  name String @db.VarChar(255)
+  private Boolean @db.Boolean
+  password String @db.VarChar(255)
+  users RoomUsers[]
+}
+
+model RoomUsers{
+  roomID Int
+  userID Int
+  room Room @relation(fields: [roomID], references: [id]) 
+  user User @relation(fields: [userID], references: [id])
+  @@id([roomID, userID])
 }
