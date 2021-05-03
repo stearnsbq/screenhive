@@ -1,0 +1,41 @@
+.dropdown-content{
+  position: absolute;
+  z-index: 99;
+  background-color: white;
+  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px 0 rgb(0 0 0 / 14%), 0 1px 10px 0 rgb(0 0 0 / 12%);
+  border-radius: 3px;
+  padding: 15px;
+  width: 135px;
+  color: black;
+}
+
+.container{
+  position: relative;
+}
+
+
+.dropdown-toggle{
+
+  span{
+    color: white !important;
+    cursor: pointer;
+    font-size: 16px;
+    align-self: flex-start;
+  }
+
+  mat-icon{
+    vertical-align: middle;
+  }
+
+}
+
+
+
+@media only screen and (min-width: 2000px){
+  .dropdown-toggle{
+
+    span{
+      font-size: 32px;
+    }
+  }
+}

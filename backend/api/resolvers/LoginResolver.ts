@@ -11,16 +11,12 @@ import { Prisma, PrismaClient } from '.prisma/client';
 export class LoginResolver {
 	constructor() {}
 
-
-
-
-
 	@Query(() => String)
-	async getNewAccessToken(@Ctx() {cookies, res, prisma}: {cookies: any, res: Response, prisma: PrismaClient}) {
+	async getNewAccessToken(@Ctx() { cookies, res, prisma }: { cookies: any; res: Response; prisma: PrismaClient }) {
 		try {
-			const token  = cookies.refresh_token;
+			const token = cookies.refresh_token;
 
-			if (await prisma.revokedToken.count({where:{token: token.split('.')[2]}}) > 0)  {
+			if ((await prisma.revokedToken.count({ where: { token: token.split('.')[2] } })) > 0) {
 				throw new Error('Revoked Token!');
 			}
 
@@ -40,17 +36,19 @@ export class LoginResolver {
 	}
 
 	@Mutation(() => String)
-	async login(@Arg('username') username: string, @Arg('password') password: string, @Ctx() {res, prisma}: {res: Response, prisma: PrismaClient}) {
-
-		try{
+	async login(
+		@Arg('username') username: string,
+		@Arg('password') password: string,
+		@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient }
+	) {
+		try {
 			const user = await prisma.user.findUnique({
-				where:{
+				where: {
 					username
 				}
-			})
+			});
 
-
-			if (user && await argon2.verify(user.password, password)) {
+			if (user && (await argon2.verify(user.password, password))) {
 				res.cookie(
 					'refresh_token',
 					jsonwebtoken.sign({ id: user.id }, process.env.JWT_SECRET as string, {
@@ -59,29 +57,27 @@ export class LoginResolver {
 						audience: 'screenhive_users',
 						algorithm: 'HS256'
 					}),
-					{ maxAge: 604800, httpOnly: true, domain: ".app.localhost" }
+					{ maxAge: 604800, httpOnly: true, domain: '.screenhive.io' }
 				);
 
-
 				await prisma.user.update({
-					where:{
+					where: {
 						username
 					},
-					data:{
+					data: {
 						lastLogin: new Date()
 					}
 				});
 
-
 				return jsonwebtoken.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, {
-					expiresIn: '15y',
+					expiresIn: '15m',
 					issuer: 'screenhive.io',
 					audience: 'screenhive_users'
 				});
 			}
 
 			throw new Error();
-		}catch(err){
+		} catch (err) {
 			res.status(401);
 			throw new Error('Invalid Username or Password');
 		}
@@ -89,13 +85,33 @@ export class LoginResolver {
 
 	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
 	@Mutation(() => Boolean)
-	async logout(@Ctx() {cookies, user, prisma}: {cookies: any, user: any, prisma: PrismaClient}) {
+	async logout(@Ctx()
+	{
+		res,
+		cookies,
+		user,
+		prisma
+	}: {
+		res: Response;
+		cookies: any;
+		user: any;
+		prisma: PrismaClient;
+	}) {
 		try {
-
 			const decoded = jsonwebtoken.verify(cookies.refresh_token, process.env.JWT_SECRET as string) as any;
 
-			return  decoded && !!(await prisma.revokedToken.create({data: {userId: user.id, token: cookies.refresh_token.split(".")[2], expiry: new Date(decoded.exp * 1000)}})) 
+			return (
+				decoded &&
+				!!await prisma.revokedToken.create({
+					data: {
+						userId: user.id,
+						token: cookies.refresh_token.split('.')[2],
+						expiry: new Date(decoded.exp * 1000)
+					}
+				})
+			);
 		} catch (err) {
+			res.status(500);
 			return false;
 		}
 	}

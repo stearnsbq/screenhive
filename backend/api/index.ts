@@ -29,14 +29,20 @@ async function main() {
 		resolvers: [ LoginResolver, RegisterResolver, UserResolver ],
 		container: Container,
 		authChecker: ({ root, args, context, info }, roles) => {
-            const {authorization} = context.req.headers;
+			try{
+				const {authorization} = context.req.headers;
 
-            const token = authorization.split(" ")[1]; // replace this with a regex
+				const bearAuthRegex = /Bearer\s[\d|a-f]{8}-([\d|a-f]{4}-){3}[\d|a-f]{12}/g
 
-            try{
-			   context.user = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as any;;
+				if(!authorization || !bearAuthRegex.test(authorization)){
+					throw new Error("Invalid Authorization Header!")
+				}
 
-			   return roles.some((element) => element === context.user.role)
+				const token = authorization.split(" ")[1]; 
+
+				context.user = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as any;
+
+				return roles.some((element) => element === context.user.role)
             }catch(err){
 				context.res.status(401);
                 return false;

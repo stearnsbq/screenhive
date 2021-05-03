@@ -28,7 +28,6 @@ model User{
   accountOffenses AccountOffense[]
   reports Report[] @relation("reporter")
   reportsAgainstUser Report[] @relation("reportee")
-  rooms RoomUsers[]
 }
 
 model RevokedToken{
@@ -74,20 +73,4 @@ model Report{
   reason String @db.Text
   reporterUser User @relation("reporter", fields: [reporter], references: [id])
   reporteeUser User @relation("reportee", fields: [reportee], references: [id])
-}
-
-model Room{
-  id Int @id@default(autoincrement())
-  name String @db.VarChar(255)
-  private Boolean @db.Boolean
-  password String @db.VarChar(255)
-  users RoomUsers[]
-}
-
-model RoomUsers{
-  roomID Int
-  userID Int
-  room Room @relation(fields: [roomID], references: [id]) 
-  user User @relation(fields: [userID], references: [id])
-  @@id([roomID, userID])
 }

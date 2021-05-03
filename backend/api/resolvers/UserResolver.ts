@@ -10,50 +10,40 @@ import { Response } from 'express';
 export class UserResolver {
 	constructor() {}
 
-
-
-	@FieldResolver(() => [RevokedToken])
-	public async revokedTokens(@Root() user : User, @Ctx() {prisma} : {prisma: PrismaClient}){
+	@FieldResolver(() => [ RevokedToken ])
+	public async revokedTokens(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
 		return await prisma.revokedToken.findMany({
-			where:{
+			where: {
 				userId: user.id
 			}
-		})
-	}
-
-
-	@Authorized<Role>(Role.Admin, Role.SuperAdmin)
-	@Query((returns) => [ User ])
-	async users(@Ctx() {prisma}: {prisma: PrismaClient}) {
-		return prisma.user.findMany();
+		});
 	}
 
 	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
 	@Query((returns) => User)
-	async user(@Ctx() {user, prisma}: {user: any, prisma: PrismaClient}) {
+	async user(@Ctx() { user, prisma }: { user: any; prisma: PrismaClient }) {
 		return await prisma.user.findUnique({
-			where:{
+			where: {
 				id: user.id
 			}
-		})
+		});
 	}
 
 	@Authorized<Role>(Role.Admin, Role.SuperAdmin)
 	@Mutation((returns) => User)
-	async updateRole(@Arg('role') role: Role, @Ctx() {user, res, prisma}: {user: any, res: Response, prisma: PrismaClient}) {
-
+	async updateRole(
+		@Arg('role') role: Role,
+		@Ctx() { user, res, prisma }: { user: any; res: Response; prisma: PrismaClient }
+	) {
 		try {
-
 			return await prisma.user.update({
-				where:{
+				where: {
 					id: user.id
 				},
-				data:{
+				data: {
 					role: role
 				}
-			})
-			
-
+			});
 		} catch (err) {
 			res.status(401);
 			throw new Error('Not Authenticated');
