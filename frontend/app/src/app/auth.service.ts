@@ -8,7 +8,6 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 	providedIn: 'root'
 })
 export class AuthService {
-	private _access_token: string;
 	private refreshTimer: any;
 	private jwtHelper: JwtHelperService;
 
@@ -16,16 +15,10 @@ export class AuthService {
 		this.jwtHelper = new JwtHelperService();
 	}
 
-	get access_token() {
-		return this._access_token;
-	}
-
-	set access_token(token: string) {
-		this._access_token = token;
-	}
 
 	public isLoggedIn() {
-		return this._access_token && !this.jwtHelper.isTokenExpired(this._access_token);
+		const token = localStorage.getItem("access_token");
+		return !this.jwtHelper.isTokenExpired(token);
 	}
 
 	public logout() {
@@ -37,13 +30,11 @@ export class AuthService {
 
 		this.apollo.mutate({ mutation }).subscribe(
 			() => {
-				delete this._access_token;
+				localStorage.clear();
 
 				this.apollo.client.resetStore();
 
 				clearTimeout(this.refreshTimer);
-
-				localStorage.clear();
 			},
 			(err) => {
 				console.log(err);
@@ -72,16 +63,16 @@ export class AuthService {
 			})
 			.pipe(
 				tap(({ data }) => {
-					this._access_token = data['login'];
+					localStorage.setItem("access_token", data["login"])
 					this.startRefreshTimer();
 				})
 			);
 	}
 
-	private startRefreshTimer() {
+	public startRefreshTimer() {
 		const helper = new JwtHelperService();
 
-		const user = helper.decodeToken(this._access_token) as any;
+		const user = helper.decodeToken(localStorage.getItem("access_token")) as any;
 
 		const expires = new Date(user.exp * 1000);
 		const timeout = expires.getTime() - Date.now() - 60 * 1000;
@@ -92,7 +83,7 @@ export class AuthService {
 					const token = data['refreshToken'];
 					console.log(`Token Refresh ${token}`);
 
-					this._access_token = token;
+					localStorage.setItem("access_token", token);
 				},
 				(err) => {
 					console.log(err); // refresh token died
@@ -101,7 +92,7 @@ export class AuthService {
 		}, timeout);
 	}
 
-	private refreshToken() {
+	public refreshToken() {
 		const query = gql`
 			query {
 				refreshToken

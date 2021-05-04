@@ -1,8 +1,0 @@
-<ng-container *ngIf="!authService.isLoggedIn() else app">
-    <app-login></app-login>
-</ng-container>
-
-
-<ng-template #app>
-    <router-outlet></router-outlet>
-</ng-template>

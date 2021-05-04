@@ -4,27 +4,25 @@ import { ApolloClientOptions, ApolloLink, InMemoryCache } from '@apollo/client/c
 import { HttpLink } from 'apollo-angular/http';
 import { environment } from 'src/environments/environment';
 import { setContext } from '@apollo/client/link/context';
-import { AuthService } from './main-app/auth.service';
+import { AuthService } from './auth.service';
 
-export function createApollo(httpLink: HttpLink, authService: AuthService): ApolloClientOptions<any> {
+export function createApollo(httpLink: HttpLink): ApolloClientOptions<any> {
 	const basic = setContext((operation, context) => ({
 		headers: {
 			Accept: 'charset=utf-8'
 		}
 	}));
 
-	const auth = setContext((operation, context) => {
-		const token = authService.access_token;
+	const auth = setContext(async (operation, context) => {
+		const token = localStorage.getItem("access_token")
 
-		if (!token) {
-			return {};
-		}
 
-		return {
+		return token ? {
 			headers: {
 				Authorization: `Bearer ${token}`
 			}
-		};
+		} : {}
+
 	});
 
 	return {
@@ -38,7 +36,7 @@ export function createApollo(httpLink: HttpLink, authService: AuthService): Apol
 		{
 			provide: APOLLO_OPTIONS,
 			useFactory: createApollo,
-			deps: [ HttpLink, AuthService ]
+			deps: [ HttpLink ]
 		}
 	]
 })

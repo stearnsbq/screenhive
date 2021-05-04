@@ -5,9 +5,12 @@ import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { GraphQLModule } from './graphql.module';
 import { HttpClientModule } from '@angular/common/http';
+import { LoginComponent } from './login/login.component';
+import { HeaderComponent } from './header/header.component';
+
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent, LoginComponent, HeaderComponent
   ],
   imports: [
     BrowserModule,
