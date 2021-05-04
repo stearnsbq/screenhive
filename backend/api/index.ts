@@ -13,6 +13,7 @@ import http from 'http'
 import {Container} from 'typedi';
 import cors from 'cors';
 const cookieParser = require('cookie-parser');
+const helmet = require("helmet")
 
 
 
@@ -22,6 +23,7 @@ async function main() {
 	const app = express(); // create the express instance
 
 	app.use(json());
+	app.use(helmet())
 	app.use(cookieParser());
 	app.use(cors({origin: "*"}))
 

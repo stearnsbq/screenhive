@@ -12,7 +12,7 @@ export class LoginResolver {
 	constructor() {}
 
 	@Query(() => String)
-	async getNewAccessToken(@Ctx() { cookies, res, prisma }: { cookies: any; res: Response; prisma: PrismaClient }) {
+	async refreshToken(@Ctx() { cookies, res, prisma }: { cookies: any; res: Response; prisma: PrismaClient }) {
 		try {
 			const token = cookies.refresh_token;
 
@@ -57,7 +57,7 @@ export class LoginResolver {
 						audience: 'screenhive_users',
 						algorithm: 'HS256'
 					}),
-					{ maxAge: 604800, httpOnly: true, domain: '.screenhive.io' }
+					{ maxAge: 604800, httpOnly: true,  }
 				);
 
 				await prisma.user.update({
@@ -99,6 +99,8 @@ export class LoginResolver {
 	}) {
 		try {
 			const decoded = jsonwebtoken.verify(cookies.refresh_token, process.env.JWT_SECRET as string) as any;
+
+			res.clearCookie("refresh_token");
 
 			return (
 				decoded &&

@@ -1,0 +1,9 @@
+<div class="container" *ngIf="toggleText">
+  <div class="dropdown-toggle">
+    <span (click)="open()" *ngIf="!isOpen">{{toggleText}} <mat-icon>expand_more</mat-icon></span>
+    <span (click)="close()" *ngIf="isOpen">{{toggleText}} <mat-icon>expand_less</mat-icon></span>
+  </div>
+  <div *ngIf="isOpen" class="dropdown-content">
+    <ng-content></ng-content>
+  </div>
+</div>
