@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 
 @Component({
@@ -9,7 +10,9 @@ import { AuthService } from './auth.service';
 export class AppComponent {
   title = 'screenhive';
 
-  constructor(public auth: AuthService){
-    
+  constructor(public auth: AuthService, private api: ApiService){
+      this.api.csrf().then(() => {
+        console.log("ok")
+      })
   }
 }

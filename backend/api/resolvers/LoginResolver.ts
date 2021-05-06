@@ -11,6 +11,12 @@ import { Prisma, PrismaClient } from '.prisma/client';
 export class LoginResolver {
 	constructor() {}
 
+
+	@Query(() => Boolean)
+	async csrf(){
+		return true;
+	}
+
 	@Query(() => String)
 	async refreshToken(@Ctx() { cookies, res, prisma }: { cookies: any; res: Response; prisma: PrismaClient }) {
 		try {
@@ -57,7 +63,7 @@ export class LoginResolver {
 						audience: 'screenhive_users',
 						algorithm: 'HS256'
 					}),
-					{ maxAge: 604800, httpOnly: true,  }
+					{ maxAge: 604800, httpOnly: true, domain: ".screenhive.io", sameSite: true  }
 				);
 
 				await prisma.user.update({

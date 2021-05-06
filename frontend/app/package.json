@@ -1,5 +1,5 @@
 {
-  "name": "crea330-project1",
+  "name": "screenhive-app-frontend",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -24,8 +24,10 @@
     "@angular/router": "~11.0.3",
     "@apollo/client": "^3.0.0",
     "@auth0/angular-jwt": "^5.0.2",
+    "angular-cookies": "^1.8.2",
     "apollo-angular": "^2.4.0",
     "graphql": "^15.0.0",
+    "ngx-cookie": "^5.0.2",
     "rxjs": "~6.6.0",
     "stream": "0.0.2",
     "tslib": "^2.0.0",

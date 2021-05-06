@@ -12,6 +12,7 @@ import { ApolloServer } from "apollo-server-express";
 import http from 'http'
 import {Container} from 'typedi';
 import cors from 'cors';
+import csurf from 'csurf';
 const cookieParser = require('cookie-parser');
 const helmet = require("helmet")
 
@@ -22,10 +23,24 @@ async function main() {
 
 	const app = express(); // create the express instance
 
+	const csrfProtection = csurf({
+		cookie: {httpOnly: true},
+		ignoreMethods: ['GET', 'HEAD', 'OPTIONS'],
+	  });
+
 	app.use(json());
 	app.use(helmet())
 	app.use(cookieParser());
 	app.use(cors({origin: "*"}))
+	app.use(csrfProtection);
+	app.use((req, res, next) => {
+		res.cookie('XSRF-TOKEN', req.csrfToken());
+		next();
+	})
+
+	app.get("/csrf", (req, res) => {
+		res.json({})
+	})
 
 	const schema = await buildSchema({
 		resolvers: [ LoginResolver, RegisterResolver, UserResolver ],
