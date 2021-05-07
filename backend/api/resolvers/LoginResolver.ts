@@ -12,11 +12,6 @@ export class LoginResolver {
 	constructor() {}
 
 
-	@Query(() => Boolean)
-	async csrf(){
-		return true;
-	}
-
 	@Query(() => String)
 	async refreshToken(@Ctx() { cookies, res, prisma }: { cookies: any; res: Response; prisma: PrismaClient }) {
 		try {

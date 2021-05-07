@@ -4,6 +4,7 @@ import { Arg, Ctx, Field, InputType, Mutation, Resolver } from 'type-graphql';
 import { Service } from 'typedi';
 import { User } from '@generated/type-graphql';
 import jsonwebtoken from 'jsonwebtoken';
+import argon2 from 'argon2'
 
 @Service()
 @Resolver()
@@ -64,7 +65,7 @@ export class RegisterResolver {
 			const newUser = await prisma.user.create({
 				data: {
 					username,
-					password,
+					password: await argon2.hash(password),
 					email,
 					dob: new Date(dob),
 					registered: new Date(),

@@ -1,6 +1,6 @@
 import { Resolver, Query, Mutation, Ctx, Arg, Authorized, FieldResolver, Root, ResolverInterface } from 'type-graphql';
 import { Service } from 'typedi';
-import { User, RevokedToken } from '@generated/type-graphql';
+import { User, RevokedToken, Report } from '@generated/type-graphql';
 import { Role } from '../enum/Role';
 import { PrismaClient } from '@prisma/client';
 import { Response } from 'express';
@@ -17,6 +17,49 @@ export class UserResolver {
 				userId: user.id
 			}
 		});
+	}
+
+
+
+	@FieldResolver(() => [ String ])
+	public async friends(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
+		return (await prisma.user.findUnique({
+			where: {
+				id: user.id
+			},
+			select:{
+				friends: {
+					select: {
+						username: true
+					}
+				}
+			}
+		}))?.friends || [];
+	}
+
+	@FieldResolver(() => [ Report ])
+	public async reports(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
+		return (await prisma.user.findUnique({
+			where: {
+				id: user.id
+			},
+			select:{
+				reports: true
+			}
+		}))?.reports || [];
+	}
+
+
+	@FieldResolver(() => [ Report ])
+	public async reportsAgainstUser(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
+		return (await prisma.user.findUnique({
+			where: {
+				id: user.id
+			},
+			select:{
+				reportsAgainstUser: true
+			}
+		}))?.reportsAgainstUser || [];
 	}
 
 	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)

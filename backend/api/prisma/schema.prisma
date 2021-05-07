@@ -28,6 +28,8 @@ model User{
   accountOffenses AccountOffense[]
   reports Report[] @relation("reporter")
   reportsAgainstUser Report[] @relation("reportee")
+  friends User[] @relation("UserFriends", references: [id])
+  friendsWith User[] @relation("UserFriends", references: [id])
 }
 
 model RevokedToken{

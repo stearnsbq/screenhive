@@ -32,11 +32,12 @@ async function main() {
 	app.use(helmet())
 	app.use(cookieParser());
 	app.use(cors({origin: "*"}))
-	app.use(csrfProtection);
-	app.use((req, res, next) => {
-		res.cookie('XSRF-TOKEN', req.csrfToken());
-		next();
-	})
+	//app.use(csrfProtection);
+	
+	// app.use((req, res, next) => {
+	// 	res.cookie('XSRF-TOKEN', req.csrfToken());
+	// 	next();
+	// })
 
 	app.get("/csrf", (req, res) => {
 		res.json({})
@@ -49,9 +50,10 @@ async function main() {
 			try{
 				const {authorization} = context.req.headers;
 
-				const bearAuthRegex = /Bearer\s[\d|a-f]{8}-([\d|a-f]{4}-){3}[\d|a-f]{12}/g
+				const bearAuthRegex = /^Bearer\s[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/g
 
 				if(!authorization || !bearAuthRegex.test(authorization)){
+					console.log("do")
 					throw new Error("Invalid Authorization Header!")
 				}
 
