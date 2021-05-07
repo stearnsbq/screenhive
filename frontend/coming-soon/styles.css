@@ -1,0 +1,13 @@
+body{
+    background-color: black;
+    background-image: url("background.png");
+    font-family: 'Roboto', sans-serif;
+    height: 95vh;
+    display: grid;
+}
+
+
+.container{
+    color: white;
+    margin: auto;
+}
