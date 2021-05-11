@@ -74,20 +74,13 @@ export class RegisterResolver {
 			});
 
 			const verificationToken = jsonwebtoken.sign(
-				{ id: newUser.id, email, username },
+				{email},
 				process.env.JWT_SECRET as string,
 				{ expiresIn: '30m' }
 			);
 
 			// send verification email here
 
-			await prisma.verificationToken.create({
-				data: {
-					token: verificationToken.split('.')[2],
-					userId: newUser.id,
-					expiry: new Date(Date.now() + 30 * 60000)
-				}
-			});
 
 			return newUser;
 		} catch (err) {

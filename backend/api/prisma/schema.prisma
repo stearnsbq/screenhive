@@ -23,7 +23,6 @@ model User{
   lastLogin DateTime @db.Timestamp()
   role Int @db.SmallInt @default(0)
   revokedTokens RevokedToken[]
-  verificationTokens VerificationToken[]
   premiumSubscriptions PremiumSubscription[]
   accountOffenses AccountOffense[]
   reports Report[] @relation("reporter")
@@ -40,13 +39,6 @@ model RevokedToken{
   @@id([userId, token])
 }
 
-model VerificationToken{
-  userId Int  @db.Integer
-  token String  @db.VarChar(255)
-  expiry DateTime @db.Timestamp()
-  user User @relation(fields: [userId], references: [id])
-  @@id([userId, token])
-}
 
 model PremiumSubscription {
   id Int  @id @default(autoincrement())
