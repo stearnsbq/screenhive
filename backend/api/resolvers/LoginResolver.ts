@@ -71,7 +71,7 @@ export class LoginResolver {
 				});
 
 				return jsonwebtoken.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, {
-					expiresIn: '15m',
+					expiresIn: '15y',
 					issuer: 'screenhive.io',
 					audience: 'screenhive_users'
 				});

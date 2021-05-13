@@ -8,6 +8,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { LoginComponent } from './login/login.component';
 import { HeaderComponent } from './header/header.component';
 import { CookieModule } from 'ngx-cookie';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -19,6 +20,8 @@ import { CookieModule } from 'ngx-cookie';
     BrowserAnimationsModule,
     GraphQLModule,
     HttpClientModule,
+    FormsModule,
+    ReactiveFormsModule,
     CookieModule.forRoot()
   ],
   providers: [],

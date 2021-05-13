@@ -1,0 +1,32 @@
+.content{
+    background-color: #48484B;
+    width: 100%;
+    padding: 20px;
+    display: flex;
+}
+
+.spacer{
+    flex: 1;
+}
+
+
+.logo{
+
+    img{
+        vertical-align: middle;
+    }
+
+    span{
+        vertical-align: middle;
+        font-size: 32px;
+    }
+
+    :nth-child(2){
+        color: #FF8200;
+    }
+
+    :last-child{
+        color: #4EA699;
+    }
+
+}

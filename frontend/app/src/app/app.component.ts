@@ -11,8 +11,8 @@ export class AppComponent {
   title = 'screenhive';
 
   constructor(public auth: AuthService, private api: ApiService){
-      this.api.csrf().then(() => {
-        console.log("ok")
-      })
+      // this.api.csrf().then(() => {
+      //   console.log("ok")
+      // })
   }
 }
