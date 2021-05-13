@@ -1,0 +1,51 @@
+.content {
+  width: 100%;
+  height: calc(100% - 60px);
+  display: flex;
+  flex-direction: row;
+}
+
+.rooms {
+  background-color: #262626;
+  width: 85%;
+  height: 100%;
+}
+
+.sidenav {
+  width: 15%;
+  height: 100%;
+  background-color: #48484b;
+  display: flex;
+  flex-direction: column;
+
+  text-align: center;
+}
+
+.divider {
+  height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  margin-left: 15px;
+  margin-right: 15px;
+}
+
+.sidenav-header {
+  margin-top: 15px;
+  display: flex;
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+
+  h1 {
+    margin-left: 50px;
+    flex: 1;
+    margin-bottom: 0;
+    color: white;
+    vertical-align: middle;
+  }
+
+  img {
+    flex: 0.1;
+    padding-right: 25px;
+    vertical-align: middle;
+  }
+}

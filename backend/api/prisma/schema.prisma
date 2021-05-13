@@ -22,6 +22,7 @@ model User{
   verified Boolean @db.Boolean @default(false)
   lastLogin DateTime @db.Timestamp()
   role Int @db.SmallInt @default(0)
+  avatar String @db.VarChar(255)
   revokedTokens RevokedToken[]
   premiumSubscriptions PremiumSubscription[]
   accountOffenses AccountOffense[]

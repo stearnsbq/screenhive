@@ -4,7 +4,7 @@ import { AppComponent } from './app.component';
 import { AuthGuard } from './auth.guard';
 
 const routes: Routes = [
-  {path: "rooms", canActivate: [AuthGuard], loadChildren: () => import('./rooms/rooms.module').then(m => m.RoomsModule) },
+  {path: "", canActivate: [AuthGuard], loadChildren: () => import('./rooms/rooms.module').then(m => m.RoomsModule) },
   {path: "room/:id", canActivate: [AuthGuard], loadChildren: () => import('./room/room.module').then(m => m.RoomModule) }
 ]
 ;
