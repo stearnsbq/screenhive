@@ -49,3 +49,41 @@
     vertical-align: middle;
   }
 }
+
+.rooms-header {
+  color: white;
+}
+
+.rooms-grid {
+  height: 100%;
+  display: grid;
+  color: white;
+  grid-template-columns: repeat(3, 0.1fr);
+  gap: 15px;
+}
+
+.rooms-grid-item {
+  height: 100%;
+  width: 100%;
+}
+
+.grid-item-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  padding: 5px;
+  margin-top: -6px;
+
+
+
+}
+
+.footer-users {
+  display: flex;
+
+  span{
+    vertical-align: middle;
+  }
+
+
+}
