@@ -9,6 +9,8 @@ import { LoginComponent } from './login/login.component';
 import { HeaderComponent } from './header/header.component';
 import { CookieModule } from 'ngx-cookie';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { SocketIoModule } from 'ngx-socket-io';
+import { environment } from 'src/environments/environment';
 
 @NgModule({
   declarations: [
@@ -22,7 +24,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
-    CookieModule.forRoot()
+    CookieModule.forRoot(),
+    SocketIoModule.forRoot({ url: environment.socket, options: {} })
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -6,6 +6,7 @@ export const environment = {
   production: false,
   api: '/graphql',
   csrf: '/csrf',
+  socket: 'http://localhost:3000'
 };
 
 /*

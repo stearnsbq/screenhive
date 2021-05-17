@@ -93,7 +93,7 @@ export class RoomController {
 				}
 
 				room.users.forEach((socket, user) => {
-					socket.emit('userLeft', { user: username });
+					socket.emit('user-left-room', { user: username });
 				});
 
 				if (room.users.size <= 0) {
@@ -130,6 +130,11 @@ export class RoomController {
 				if (room.isPrivate && !await argon2.verify(room.password as string, password as string)) {
 					return socket.emit('error', { err: 'Invalid Password!' });
 				}
+
+
+				room.users.forEach((socket, username) => {
+					socket.emit("user-join-room", {username})
+				})
 	
 				room.users.set(user.username, socket);
 	
