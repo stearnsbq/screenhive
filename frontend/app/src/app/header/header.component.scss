@@ -11,7 +11,7 @@
 }
 
 .small-spacer {
-  flex: 0.08;
+  flex: 0.12;
 }
 
 .logo {
@@ -87,4 +87,36 @@
     border-radius: 50%;
     
   }
+}
+
+.hamburger{
+  display: none;
+}
+
+
+@media only screen and (max-width: 745px){
+
+  .controls{
+    display: none;
+  }
+
+  .content {
+    flex-direction: column;
+  }
+
+  .search {
+    width: 95%;
+  }
+
+  .spacer {
+    display: none;
+
+  }
+
+  .hamburger{
+    display: block;
+  }
+
+
+
 }

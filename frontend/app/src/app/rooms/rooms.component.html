@@ -14,23 +14,23 @@
         </div>
 
 
-        <div>
+        <div class="grid-container">
 
             <div class="rooms-grid">
 
-                <div *ngFor="let item of [].constructor(5); let i = index" class="rooms-grid-item">
-                    <img src="https://via.placeholder.com/200x100" />
+                <div *ngFor="let item of [].constructor(16); let i = index" class="rooms-grid-item">
+                    <img src="https://via.placeholder.com/250x125" />
                     <div class="grid-item-footer" [style.background]="i % 2 == 0 ? '#FF8200': '#4EA699'">
                         <span class="room-name">Bobby's Room</span>
                         <div class="footer-users">
                             <img src="/assets/icons/user.svg" />
                             <span>{{i}}/20</span>
                         </div>
-    
+
                     </div>
                 </div>
             </div>
-    
+
 
         </div>
 
