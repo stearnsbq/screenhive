@@ -25,7 +25,7 @@ import { environment } from 'src/environments/environment';
     FormsModule,
     ReactiveFormsModule,
     CookieModule.forRoot(),
-    SocketIoModule.forRoot({ url: environment.socket, options: {} })
+    SocketIoModule.forRoot({ url: environment.socket + "?token=" + localStorage.getItem("access_token"), options: {} })
   ],
   providers: [],
   bootstrap: [AppComponent]

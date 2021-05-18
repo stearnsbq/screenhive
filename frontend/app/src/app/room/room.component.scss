@@ -1,0 +1,72 @@
+.content {
+  height: calc(100% - 60px);
+  width: 100%;
+  background-color: #262626;
+  display: flex;
+  flex-direction: row;
+}
+
+.video {
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+}
+
+.player {
+  height: 100%;
+  width: 100%;
+  background-color: #202225;
+}
+
+.chat {
+  width: 20%;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages{
+    max-width: 100%;
+    flex: 1;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.chat-controls{
+    display: flex;
+    width: 100%;
+    flex-shrink: 0;
+    height: 80px;
+    background-color: hsla(0,0%,100%,.05);
+
+
+
+    textarea{
+        border: none;
+        width: 100%;
+        flex: 1;
+        user-select: none;
+        outline-width: 0;
+        margin: 15px;
+        resize: none;
+        color: #dcddde;
+        background-color: transparent;
+    }
+
+
+}
+
+
+
+.video-controls {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  height: 50px;
+}
+
+
+
+.icon{
+    height: 32px;
+    vertical-align: middle;
+}

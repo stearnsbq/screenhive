@@ -12,8 +12,9 @@ const io = require("socket.io")(3000, {cors:{
 
 
 io.use((socket: any, next: any) => {
+    
     if(socket.handshake.query && socket.handshake.query.token){
-
+        
         jsonwebtoken.verify(socket.handshake.query.token, process.env.JWT_SECRET as string, (err: any, decoded: any) => {
             if(err) return next(new Error("UnAuthorized"))
             socket.user = decoded;
@@ -21,7 +22,8 @@ io.use((socket: any, next: any) => {
         })
         
     }else{
-        next(new Error("UnAuthorized"))
+        next(new Error("Unauthorized"))
+        socket.disconnect();
     }
 })
 

@@ -1,1 +1,29 @@
-<p>room works!</p>
+<div class="content">
+    <div class="video">
+        <video class="player" autoplay #player></video> 
+        <div class="room-users">
+            <ul class="user-list">
+                <li class="self">
+                    <img />
+                </li>
+            </ul>
+        </div>
+        <div class="video-controls">
+            <img src="/assets/icons/remote.svg" class="remote-button icon" />
+            <img src="/assets/icons/play.svg" *ngIf="player.paused" class="play-button icon" />
+            <img src="/assets/icons/pause.svg" *ngIf="!player.paused" class="pause-button icon" />
+            <img src="/assets/icons/volume.svg" *ngIf="volume.value >= 50" class="volume-button icon" />
+            <img src="/assets/icons/volume-down.svg" *ngIf="volume.value < 50" class="volume-button icon" />
+            <img src="/assets/icons/volume-mute.svg" *ngIf="volume.value === 0" class="volume-button icon" />
+            <input #volume type="range" min="0" max="100">
+        </div>
+    </div>
+    <div class="chat">
+        <ul class="messages">
+                
+        </ul>
+        <div class="chat-controls">
+            <textarea class="chat-input" placeholder="Send a message"></textarea>
+        </div>
+    </div>
+</div>

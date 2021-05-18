@@ -11,7 +11,7 @@
 
   <div class="small-spacer"></div>
 
-  <div class="search">
+  <div class="search" *ngIf="showSearch()">
       <div class="search-bar">
         <img src="/assets/icons/search.svg" />
         <input type="search" placeholder="Search for rooms"/>

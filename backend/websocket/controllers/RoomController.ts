@@ -156,6 +156,7 @@ export class RoomController {
 			await this.roomsMutex.runExclusive(() => {
 
 				if (!this.rooms.has(roomID)) {
+					console.log("roomID")
 					return socket.emit('error', { err: 'Room does not exist!' });
 				}
 	
