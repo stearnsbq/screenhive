@@ -15,6 +15,11 @@ export class AuthService {
 		this.jwtHelper = new JwtHelperService();
 	}
 
+	public user(){
+		const token = localStorage.getItem("access_token");
+		return this.jwtHelper.decodeToken(token);
+	}
+
 
 	public isLoggedIn() {
 		const token = localStorage.getItem("access_token");

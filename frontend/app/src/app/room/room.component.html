@@ -1,6 +1,14 @@
 <div class="content">
     <div class="video">
-        <video class="player" autoplay #player></video> 
+        <div class="player">
+            <div class="player-menu">
+                <ul>
+                    <li (click)="chatExpanded = !chatExpanded">Chat</li>
+                </ul>
+            </div>
+        
+            <video src="/assets/test.mp4" controls  autoplay #player></video> 
+        </div>
         <div class="room-users">
             <ul class="user-list">
                 <li class="self">
@@ -10,20 +18,29 @@
         </div>
         <div class="video-controls">
             <img src="/assets/icons/remote.svg" class="remote-button icon" />
-            <img src="/assets/icons/play.svg" *ngIf="player.paused" class="play-button icon" />
-            <img src="/assets/icons/pause.svg" *ngIf="!player.paused" class="pause-button icon" />
-            <img src="/assets/icons/volume.svg" *ngIf="volume.value >= 50" class="volume-button icon" />
-            <img src="/assets/icons/volume-down.svg" *ngIf="volume.value < 50" class="volume-button icon" />
-            <img src="/assets/icons/volume-mute.svg" *ngIf="volume.value === 0" class="volume-button icon" />
-            <input #volume type="range" min="0" max="100">
+            <img src="/assets/icons/play.svg" *ngIf="player.paused" (click)="player.play()" class="play-button icon" />
+            <img src="/assets/icons/pause.svg" *ngIf="!player.paused" (click)="player.pause()" class="pause-button icon" />
+            <img src="/assets/icons/volume.svg" *ngIf="playerVolume >= 0.5 && !muted" (click)="mute()" class="volume-button icon" />
+            <img src="/assets/icons/volume-down.svg" *ngIf="(playerVolume < 0.5 && playerVolume > 0) && !muted" (click)="mute()" class="volume-button icon" />
+            <img src="/assets/icons/volume-mute.svg" *ngIf="playerVolume === 0 && !muted" (click)="mute()" class="volume-button icon" />
+            <img src="/assets/icons/volume-off.svg" *ngIf="muted" (click)="unmute()" class="volume-button icon" />
+            <input class="volume-slider" #volume type="range" min="0" max="1.0" step="0.01" [(ngModel)]="playerVolume" (ngModelChange)="onVolumeChange()">
         </div>
     </div>
-    <div class="chat">
+    <aside class="chat" *ngIf="chatExpanded">
         <ul class="messages">
+            <li *ngFor="let message of messages">
+                <span>{{message.user}}: </span>
+                <span>{{message.message}}</span>
+            </li>
                 
         </ul>
+        <div class="divider"></div>
         <div class="chat-controls">
-            <textarea class="chat-input" placeholder="Send a message"></textarea>
+
+            <div class="text-container">
+                <textarea class="chat-input" placeholder="Send a message" (keyup.enter)="sendChat($event.target)"></textarea>
+            </div>
         </div>
-    </div>
+    </aside>
 </div>

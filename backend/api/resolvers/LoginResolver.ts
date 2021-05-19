@@ -70,7 +70,7 @@ export class LoginResolver {
 					}
 				});
 
-				return jsonwebtoken.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, {
+				return jsonwebtoken.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET as string, {
 					expiresIn: '15y',
 					issuer: 'screenhive.io',
 					audience: 'screenhive_users'
