@@ -9,7 +9,7 @@
     </div>
     <div class="rooms">
         <div class="rooms-header">
-            <h1>Public Rooms</h1>
+            <h1 (click)="createRoom()">Public Rooms</h1>
             <div class="divider"></div>
         </div>
 
@@ -18,13 +18,13 @@
 
             <div class="rooms-grid">
 
-                <div *ngFor="let item of [].constructor(16); let i = index" class="rooms-grid-item" (click)="enterRoom()">
+                <div *ngFor="let room of rooms; let i = index" class="rooms-grid-item" (click)="joinRoom(room)">
                     <img src="https://via.placeholder.com/250x125" />
                     <div class="grid-item-footer" [style.background]="i % 2 == 0 ? '#FF8200': '#4EA699'">
-                        <span class="room-name">Bobby's Room</span>
+                        <span class="room-name">{{room.name}}</span>
                         <div class="footer-users">
                             <img src="/assets/icons/user.svg" />
-                            <span>{{i}}/20</span>
+                            <span>{{room.users.length}}/20</span>
                         </div>
 
                     </div>

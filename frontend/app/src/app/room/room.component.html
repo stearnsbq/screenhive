@@ -3,17 +3,19 @@
         <div class="player">
             <div class="player-menu">
                 <ul>
-                    <li (click)="chatExpanded = !chatExpanded">Chat</li>
+                    <li (click)="chatExpanded = !chatExpanded"><img src="/assets/icons/menu.svg" /></li>
                 </ul>
             </div>
         
-            <video src="/assets/test.mp4" controls  autoplay #player></video> 
+            <video src="/assets/test.mp4" autoplay loop muted [volume]="0" #player></video> 
         </div>
-        <div class="room-users">
+        <div class="room-users" *ngIf="room">
             <ul class="user-list">
                 <li class="self">
-                    <img />
+                    <img src="https://via.placeholder.com/35" />
                 </li>
+                <li class="user-list-divider"></li>
+                <li *ngFor="let user of room.users"></li>
             </ul>
         </div>
         <div class="video-controls">
@@ -29,10 +31,10 @@
     </div>
     <aside class="chat" *ngIf="chatExpanded">
         <ul class="messages">
-            <li *ngFor="let message of messages">
+            <!-- <li *ngFor="let message of messages">
                 <span>{{message.user}}: </span>
                 <span>{{message.message}}</span>
-            </li>
+            </li> -->
                 
         </ul>
         <div class="divider"></div>
@@ -44,3 +46,15 @@
         </div>
     </aside>
 </div>
+
+
+<ng-container *ngIf="isPasswordDialogOpen">
+    <div class="dialog-container">
+        <div class="password-dialog">
+            <h1>Please Enter The Room Password</h1>
+            <div class="password-dialog-divider"></div>
+            <input placeholder="Room Password" type="password" #roomPasswordInput>
+        </div>
+    </div>
+
+</ng-container>

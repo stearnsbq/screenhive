@@ -12,23 +12,28 @@ import { Router } from '@angular/router';
 })
 export class RoomsComponent implements AfterViewInit {
   @ViewChild("grid") grid: ElementRef;
+  public rooms: {id: string, name: string, users: string[], isPrivate: boolean}[]
 
   constructor(private websocketService: WebsocketService, private router: Router) { }
 
   ngAfterViewInit(){
-
-
-
+    this.websocketService.getRooms().then(({rooms}) => {
+      this.rooms = rooms;
+    })
 
 
   }
   
+  public createRoom(){
+    this.websocketService.createRoom("domey").then((result) => {
+      console.log(result)
 
-
-  public enterRoom(){
-    this.router.navigate(["/room"])
+    })
   }
 
+  public joinRoom(room){
 
+    this.router.navigate(['/room', room.id]);
+  }
 
 }

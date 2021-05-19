@@ -13,6 +13,7 @@ import argon2 from 'argon2';
 import { Mutex } from 'async-mutex';
 
 export interface Room {
+	id: string;
 	name: string;
 	users: Map<string, any>;
 	streamer?: any;
@@ -31,6 +32,36 @@ export class RoomController {
 		this.rooms = new Map();
 		this.roomsMutex = new Mutex();
 	}
+
+	@OnMessage("is-room-private")
+	async onGetRoom(
+		@ConnectedSocket() socket: any,
+		@SocketIO() io: any,
+		@MessageBody() { roomID }: { roomID: string}
+	) {
+
+		try {
+
+			await this.roomsMutex.runExclusive(async () => {
+
+				if(!this.rooms.has(roomID)){
+					return socket.emit('error', { err: 'Room does not exist!' });
+				}
+	
+				const room = this.rooms.get(roomID) as Room;
+	
+				socket.emit('is-room-private-success', {isPrivate: room.isPrivate});
+	
+			})
+
+		}catch(err){
+			socket.emit('error', {err})
+		}
+
+
+
+	}
+
 
 	@OnMessage('get-rooms')
 	async onGetRooms(
@@ -51,7 +82,8 @@ export class RoomController {
 				});
 
 				socket.emit('rooms', {
-					rooms: availableRooms.map(({ name, users, isPrivate, thumbnail }) => ({
+					rooms: availableRooms.map(({ id, name, users, isPrivate, thumbnail }) => ({
+						id,
 						name,
 						users: Array.from(users.keys()),
 						isPrivate,
@@ -78,6 +110,7 @@ export class RoomController {
 
 			await this.roomsMutex.runExclusive(async () => {
 				this.rooms.set(roomID, {
+					id: roomID,
 					name,
 					isPrivate,
 					password: password ? await argon2.hash(password) : undefined,
@@ -136,11 +169,11 @@ export class RoomController {
 			const user = socket.user;
 
 			await this.roomsMutex.runExclusive(async () => {
-				if (!await this.rooms.has(roomID)) {
+				if (!this.rooms.has(roomID)) {
 					return socket.emit('error', { err: 'Room Does Not Exist' });
 				}
 
-				const room = (await this.rooms.get(roomID)) as Room;
+				const room = this.rooms.get(roomID) as Room;
 
 				if (room.isPrivate && !password) {
 					return socket.emit('error', { err: 'Private rooms require a password!' });
@@ -156,8 +189,9 @@ export class RoomController {
 
 				room.users.set(user.username, socket);
 
-				socket.emit('room-join-success', { roomID, users: [ ...room.users.keys() ] });
+				socket.emit('room-join-success', { roomID, messages: [], users: [ ...room.users.keys() ].filter((usr) => usr !== user.username) });
 			});
+
 		} catch (err) {
 			socket.emit('error', { err });
 		}
@@ -177,7 +211,6 @@ export class RoomController {
 		try {
 			await this.roomsMutex.runExclusive(() => {
 				if (!this.rooms.has(roomID)) {
-					console.log('roomID');
 					return socket.emit('error', { err: 'Room does not exist!' });
 				}
 
