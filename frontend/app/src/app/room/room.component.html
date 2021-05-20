@@ -30,11 +30,22 @@
         </div>
     </div>
     <aside class="chat" *ngIf="chatExpanded">
-        <ul class="messages">
-            <!-- <li *ngFor="let message of messages">
-                <span>{{message.user}}: </span>
-                <span>{{message.message}}</span>
-            </li> -->
+        <ul class="messages" *ngIf="room">
+            <li *ngFor="let message of room.messages">
+                <ng-container [ngSwitch]="message.type">
+
+                    <div class="message-chat" *ngSwitchCase="1">
+                        <span>{{message.user}}: </span>
+                        <span>{{message.message}}</span>
+                    </div>
+                    
+                    <div class="message-event" *ngSwitchCase="2">
+                        <span>{{message.message}}</span>
+                    </div>
+
+                </ng-container>
+
+            </li>
                 
         </ul>
         <div class="divider"></div>

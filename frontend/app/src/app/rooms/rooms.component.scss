@@ -5,6 +5,11 @@
   flex-direction: row;
 }
 
+.no-rooms{
+  color: white;
+  text-align: center;
+}
+
 .rooms {
   background-color: #262626;
   width: 85%;
@@ -133,3 +138,4 @@
     height: 100%;
   }
 }
+

@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Socket } from 'ngx-socket-io';
-import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { fromEvent, merge } from 'rxjs';
+import { fromEvent, combineLatest, merge, zip } from 'rxjs';
 
 @Injectable({
 	providedIn: 'root'
@@ -60,14 +59,14 @@ export class WebsocketService {
 		return this.response('room-left-success');
 	}
 
-	public sendChat(room: string, message) {
-		this.socket.emit('send-chat', { room, message });
+	public sendChat(roomID: string, message) {
+		this.socket.emit('send-chat', { roomID, message });
 		return this.response('chat-sent-success');
 	}
 
 	public getRoomEvents() {
 		return merge(
-			[ 'user-left-room', 'user-join-room', 'chat', 'video-offer' ].map((evt) => this.socket.fromEvent(evt))
+			...['user-left-room', 'user-join-room', 'chat', 'video-offer' ].map((evt) => this.socket.fromEvent(evt))
 		);
 	}
 }
