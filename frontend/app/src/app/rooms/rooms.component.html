@@ -9,7 +9,7 @@
     </div>
     <div class="rooms">
         <div class="rooms-header">
-            <h1 (click)="createRoom()">Public Rooms</h1>
+            <h1>Public Rooms</h1>
             <div class="divider"></div>
         </div>
 
@@ -39,7 +39,7 @@
                 <div class="no-rooms">
                     <h1>No Rooms are currently open!</h1>
                     <h3>Would you like to create a room?</h3>
-                    <button>Click Here!</button>
+                    <button class="create-button" (click)="createRoom()">Click Here!</button>
                 </div>
 
             </ng-template>

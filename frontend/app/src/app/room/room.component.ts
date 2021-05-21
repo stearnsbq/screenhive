@@ -146,7 +146,6 @@ export class RoomComponent implements OnInit, OnDestroy {
     this.socketService
       .sendChat(this.roomID, escaped)
       .then((message) => {
-        console.log(message)
         this.room.messages.push({
           type: MessageType.Chat,
           user: username,
