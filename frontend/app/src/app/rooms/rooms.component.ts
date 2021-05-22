@@ -15,9 +15,11 @@ export class RoomsComponent implements AfterViewInit {
   @ViewChild("grid") grid: ElementRef;
   public rooms: {id: string, name: string, users: string[], isPrivate: boolean}[]
   public page: number;
+  public isRoomCreationOpen: boolean;
 
   constructor(private websocketService: WebsocketService, private router: Router, private logging: LoggingService) { 
     this.page = 1;
+    this.isRoomCreationOpen = false;
   }
 
   ngAfterViewInit(){

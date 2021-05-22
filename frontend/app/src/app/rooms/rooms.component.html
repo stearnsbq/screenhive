@@ -16,7 +16,7 @@
 
         <div class="grid-container">
 
-            <ng-container *ngIf="rooms && rooms.length > 0; else no_rooms" >
+            <ng-container *ngIf="rooms && rooms.length > 0; else no_rooms">
                 <div class="rooms-grid">
 
                     <div *ngFor="let room of rooms; let i = index" class="rooms-grid-item" (click)="joinRoom(room)">
@@ -27,7 +27,7 @@
                                 <img src="/assets/icons/user.svg" />
                                 <span>{{room.users.length}}/20</span>
                             </div>
-    
+
                         </div>
                     </div>
                 </div>
@@ -39,9 +39,8 @@
                 <div class="no-rooms">
                     <h1>No Rooms are currently open!</h1>
                     <h3>Would you like to create a room?</h3>
-                    <button class="create-button" (click)="createRoom()">Click Here!</button>
+                    <button (click)="isRoomCreationOpen = !isRoomCreationOpen" class="create-button">Click Here!</button>
                 </div>
-
             </ng-template>
 
 
@@ -58,4 +57,15 @@
         </div>
 
     </div>
+
+
+    
+
+
+
 </div>
+
+
+<ng-container *ngIf="isRoomCreationOpen">
+    <app-creation-dialog></app-creation-dialog>
+</ng-container>

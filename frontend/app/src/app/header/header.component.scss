@@ -63,59 +63,54 @@
   }
 }
 
-.messages-dropdown{
+.messages-dropdown {
   position: absolute;
   top: 65px;
-  right: 472px;
-  p{
+  right: 479px;
+  p {
     margin: 0;
   }
 }
 
-.notifications-dropdown{
+.notifications-dropdown {
   position: absolute;
   top: 65px;
-  right: 405px;
-  p{
+  right: 415px;
+  p {
     margin: 0;
   }
 }
 
 .controls {
+  img {
+    cursor: pointer;
+    vertical-align: middle;
+    margin-right: 15px;
+  }
 
-    img{
-        cursor: pointer;
-        vertical-align: middle;
-        margin-right: 15px;
-    }
+  :nth-child(-n + 2) {
+    margin-right: 30px;
+    padding: 5px;
+    transition: 0.2s;
+  }
 
-    :nth-child(-n+2){
-        margin-right: 30px;
-        padding: 5px;
-        transition: 0.2s;
-    }
-
-    :nth-child(-n+2):hover{
-        transition: 0.2s;
-        background-color: rgba(0, 0, 0, 0.25);
-        border-radius: 25%;
-    }
-
+  :nth-child(-n + 2):hover {
+    transition: 0.2s;
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 25%;
+  }
 
   .avatar {
     border-radius: 50%;
-    
   }
 }
 
-.hamburger{
+.hamburger {
   display: none;
 }
 
-
-@media only screen and (max-width: 745px){
-
-  .controls{
+@media only screen and (max-width: 745px) {
+  .controls {
     display: none;
   }
 
@@ -129,13 +124,9 @@
 
   .spacer {
     display: none;
-
   }
 
-  .hamburger{
+  .hamburger {
     display: block;
   }
-
-
-
 }
