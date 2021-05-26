@@ -7,7 +7,7 @@
                 </ul>
             </div>
         
-            <video src="/assets/test.mp4" autoplay loop muted [volume]="0" #player></video> 
+            <video  autoplay loop muted [volume]="0" #player></video> 
         </div>
         <div class="room-users" *ngIf="room">
             <ul class="user-list">
@@ -58,14 +58,4 @@
     </aside>
 </div>
 
-
-<ng-container *ngIf="isPasswordDialogOpen">
-    <div class="dialog-container">
-        <div class="password-dialog">
-            <h1>Please Enter The Room Password</h1>
-            <div class="password-dialog-divider"></div>
-            <input placeholder="Room Password" type="password" #roomPasswordInput>
-        </div>
-    </div>
-
-</ng-container>
+<app-password-dialog #passwordDialog></app-password-dialog>

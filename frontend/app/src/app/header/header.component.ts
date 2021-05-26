@@ -23,4 +23,8 @@ export class HeaderComponent implements OnInit {
     return !this.router.url.includes("/room")
   }
 
+  home(){
+    this.router.navigate([''])
+  }
+
 }

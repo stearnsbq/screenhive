@@ -72,9 +72,7 @@ export class RoomController {
     try {
       await this.roomsMutex.runExclusive(async () => {
         const rooms = Array.from(this.rooms.values()).filter((room) => {
-          return !room.isPrivate && query.length > 0
-            ? room.name.includes(query)
-            : true
+          return query.length > 0 ? room.name.includes(query) : true
         })
 
         socket.emit('rooms', {
@@ -83,9 +81,9 @@ export class RoomController {
             .map(({ id, name, users, isPrivate, thumbnail }) => ({
               id,
               name,
-              users: Array.from(users.keys()),
+              users: isPrivate ? [] : Array.from(users.keys()),
               isPrivate,
-              thumbnail,
+              thumbnail: isPrivate ? '' : thumbnail,
             })),
           total: rooms.length,
         })

@@ -6,4 +6,94 @@
     height: 100%;
     width: 100%;
     backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
+
+.dialog{
+    background-color: #48484b;
+    padding: 15px;
+    height: 250px;
+    width: 450px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.header{
+    display: flex;
+    justify-content: space-between;
+    color: white;
+
+    h1{
+        vertical-align: middle;
+        margin: 0;
+    }
+
+
+    button{
+        background-color: transparent;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 24px;
+    }
+}
+
+.divider{
+    height: 1px;
+    background-color: rgb(112, 109, 109);
+    width: 100%;
+}
+
+
+.footer{
+    display: flex;
+    justify-content: flex-end;
+
+
+    button{
+        padding: 8px;
+        color: white;
+        border: none;
+        font-size: 18px;
+        border-radius: 3px;
+        background-color: #ff8200;
+    }
+
+    button:hover{
+        background-color: #db7201;
+    }
+
+}
+
+.room-creation-form{
+    display: flex;
+    color: white;
+    flex-direction: column;
+}
+
+.password-input{
+    display: flex;
+    flex-direction: column;
+}
+
+.body{
+    display: flex;
+    flex-direction: column;
+
+    label{
+        margin-left: 4px;
+        margin-bottom: 5px;
+      }
+
+    input{
+        border: none;
+        border-radius: 5px;
+        padding: 5px;
+        margin-bottom: 15px;
+      }
+
+}
+

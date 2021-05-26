@@ -1,5 +1,32 @@
-<div class="dialog-container">
-    <div class="dialog">
-
+<ng-container *ngIf="isOpen">
+    <div class="dialog-container">
+        <div class="dialog">
+            <div class="header">
+                <h1>Create your room!</h1>
+                <button (click)="close()">X</button>
+            </div>
+            <div class="divider">
+            </div>
+            <div class="body">
+                <form id="ngForm" #form="ngForm" [formGroup]="creationGroup" (ngSubmit)="onCreate()" class="room-creation-form">
+                    <label for="room-name">Room Name</label>
+                    <input formControlName="name" type="text" id="room-name">
+    
+                    <div class="creation-form-is-private">
+                        <input formControlName="private" type="checkbox" id="isPrivate" (change)="isPrivate = !isPrivate">
+                        <label for="isPrivate">Private Room?</label>
+                        <div class="password-input">
+                            <label for="isPrivate">Password</label>
+                            <input formControlName="password" type="password">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="divider">
+            </div>
+            <div class="footer">
+                <button form="ngForm" >Create</button>
+            </div>
+        </div>
     </div>
-</div>
+</ng-container>

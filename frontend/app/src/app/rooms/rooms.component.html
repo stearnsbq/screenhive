@@ -22,7 +22,7 @@
                     <div *ngFor="let room of rooms; let i = index" class="rooms-grid-item" (click)="joinRoom(room)">
                         <img [src]="room.thumbnail || 'https://via.placeholder.com/250x125'" />
                         <div class="grid-item-footer" [style.background]="i % 2 == 0 ? '#FF8200': '#4EA699'">
-                            <span class="room-name">{{room.name}}</span>
+                            <span class="room-name">{{room.name}} {{room.isPrivate}}</span>
                             <div class="footer-users">
                                 <img src="/assets/icons/user.svg" />
                                 <span>{{room.users.length}}/20</span>
@@ -39,7 +39,7 @@
                 <div class="no-rooms">
                     <h1>No Rooms are currently open!</h1>
                     <h3>Would you like to create a room?</h3>
-                    <button (click)="isRoomCreationOpen = !isRoomCreationOpen" class="create-button">Click Here!</button>
+                    <button (click)="creationDialog.open()" class="create-button">Click Here!</button>
                 </div>
             </ng-template>
 
@@ -59,13 +59,8 @@
     </div>
 
 
-    
-
-
 
 </div>
 
 
-<ng-container *ngIf="isRoomCreationOpen">
-    <app-creation-dialog></app-creation-dialog>
-</ng-container>
+<app-creation-dialog #creation></app-creation-dialog>

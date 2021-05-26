@@ -5,10 +5,11 @@ import { RoomRoutingModule } from './room-routing.module';
 import { RoomComponent } from './room.component';
 
 import { FormsModule } from '@angular/forms';
+import { PasswordDialogComponent } from './password-dialog/password-dialog.component';
 
 
 @NgModule({
-  declarations: [RoomComponent],
+  declarations: [RoomComponent, PasswordDialogComponent],
   imports: [
     CommonModule,
     FormsModule,

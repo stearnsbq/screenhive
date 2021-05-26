@@ -4,7 +4,7 @@ import jsonwebtoken from 'jsonwebtoken';
 import { Service } from 'typedi';
 import { Role } from '../enum/Role';
 import { Response } from 'express';
-import { Prisma, PrismaClient } from '.prisma/client';
+import { Prisma, PrismaClient, User } from '.prisma/client';
 
 @Service()
 @Resolver()
@@ -15,6 +15,7 @@ export class LoginResolver {
 	@Query(() => String)
 	async refreshToken(@Ctx() { cookies, res, prisma }: { cookies: any; res: Response; prisma: PrismaClient }) {
 		try {
+			console.log(cookies)
 			const token = cookies.refresh_token;
 
 			if ((await prisma.revokedToken.count({ where: { token: token.split('.')[2] } })) > 0) {
@@ -25,8 +26,14 @@ export class LoginResolver {
 				id: number;
 			};
 
-			return jsonwebtoken.sign({ id: refresh_token.id }, process.env.JWT_SECRET as string, {
-				expiresIn: '15m',
+			const user = await prisma.user.findUnique({
+				where: {
+					id: refresh_token.id
+				}
+			}) as User;
+
+			return jsonwebtoken.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET as string, {
+				expiresIn: '10s',
 				issuer: 'screenhive.io',
 				audience: 'screenhive_users'
 			});
@@ -58,7 +65,7 @@ export class LoginResolver {
 						audience: 'screenhive_users',
 						algorithm: 'HS256'
 					}),
-					{ maxAge: 604800, httpOnly: true, domain: ".screenhive.io", sameSite: true  }
+					{ maxAge: 604800, httpOnly: true, /*domain: ".screenhive.io",*/ sameSite: true  }
 				);
 
 				await prisma.user.update({
@@ -71,7 +78,7 @@ export class LoginResolver {
 				});
 
 				return jsonwebtoken.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET as string, {
-					expiresIn: '15y',
+					expiresIn: '10s',
 					issuer: 'screenhive.io',
 					audience: 'screenhive_users'
 				});

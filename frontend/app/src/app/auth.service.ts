@@ -3,6 +3,7 @@ import { Apollo, gql } from 'apollo-angular';
 import { tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { JwtHelperService } from '@auth0/angular-jwt';
+import { StorageService } from './storage.service';
 
 @Injectable({
 	providedIn: 'root'
@@ -10,20 +11,19 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 export class AuthService {
 	private refreshTimer: any;
 	private jwtHelper: JwtHelperService;
+	private loggedIn: boolean;
 
-	constructor(private apollo: Apollo, private router: Router) {
+	constructor(private apollo: Apollo, private router: Router, private storage: StorageService) {
 		this.jwtHelper = new JwtHelperService();
 	}
 
 	public user(){
-		const token = localStorage.getItem("access_token");
-		return this.jwtHelper.decodeToken(token);
+		return this.jwtHelper.decodeToken(this.storage.token);
 	}
 
 
 	public isLoggedIn() {
-		const token = localStorage.getItem("access_token");
-		return !this.jwtHelper.isTokenExpired(token);
+		return !this.jwtHelper.isTokenExpired(this.storage.token);
 	}
 
 	public logout() {
@@ -82,7 +82,7 @@ export class AuthService {
 		const expires = new Date(user.exp * 1000);
 		const timeout = expires.getTime() - Date.now() - 60 * 1000;
 
-		this.refreshTimer = setTimeout(() => {
+		this.refreshTimer = setInterval(() => {
 			this.refreshToken().subscribe(
 				({ data }) => {
 					const token = data['refreshToken'];
