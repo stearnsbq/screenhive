@@ -1,12 +1,5 @@
-<ng-container *ngIf="!auth.isLoggedIn(); else app">
-    <app-login></app-login>
-</ng-container>
-
-
-<ng-template #app>
-    <div class="header">
-        <app-header></app-header>
-    </div>
+<div class="header" *ngIf="router.url !== '/'">
+    <app-header></app-header>
+</div>
     
-    <router-outlet></router-outlet>
-</ng-template>
+<router-outlet></router-outlet>

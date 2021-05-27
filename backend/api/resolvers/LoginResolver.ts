@@ -65,7 +65,7 @@ export class LoginResolver {
 						audience: 'screenhive_users',
 						algorithm: 'HS256'
 					}),
-					{ maxAge: 604800, httpOnly: true, /*domain: ".screenhive.io",*/ sameSite: true  }
+					{ maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: true, /*domain: ".screenhive.io",*/ sameSite: true  }
 				);
 
 				await prisma.user.update({
@@ -78,7 +78,7 @@ export class LoginResolver {
 				});
 
 				return jsonwebtoken.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET as string, {
-					expiresIn: '10s',
+					expiresIn: '15m',
 					issuer: 'screenhive.io',
 					audience: 'screenhive_users'
 				});

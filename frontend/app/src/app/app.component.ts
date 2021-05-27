@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 
@@ -10,7 +11,7 @@ import { AuthService } from './auth.service';
 export class AppComponent {
   title = 'screenhive';
 
-  constructor(public auth: AuthService, private api: ApiService){
+  constructor(public auth: AuthService, private api: ApiService, public router: Router){
       // this.api.csrf().then(() => {
       //   console.log("ok")
       // })

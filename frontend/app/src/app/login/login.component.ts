@@ -40,7 +40,7 @@ export class LoginComponent implements OnInit {
 		if (this.loginGroup.valid) {
 			this.authService.login(this.form.username.value, this.form.password.value).subscribe(
 				({ data }) => {
-					this.router.navigate(['']);
+					this.router.navigate(['/rooms']);
 				},
 				(err) => {
 					this.failed = true;

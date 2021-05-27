@@ -2,24 +2,29 @@ import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
-import { StorageService } from './storage.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class AuthGuard implements CanActivate {
+export class LoggedInGuard implements CanActivate {
 
 
-  constructor(private authService: AuthService, private storage: StorageService, private router: Router){
+  constructor(private auth: AuthService, private router: Router){
 
   }
 
 
   async canActivate(
     route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot): Promise<boolean | UrlTree> {
+    state: RouterStateSnapshot):  Promise<boolean | UrlTree>  {
 
-    return await this.authService.isLoggedIn();
+  
+      if(await this.auth.isLoggedIn()){
+        this.router.navigate(['/rooms']);
+        return false;
+      }
+
+      return true;
   }
   
 }

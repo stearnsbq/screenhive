@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { ProfileDialogComponent } from './profile-dialog/profile-dialog.component';
 
 @Component({
   selector: 'app-header',
@@ -7,6 +8,7 @@ import { Router } from '@angular/router';
   styleUrls: ['./header.component.scss']
 })
 export class HeaderComponent implements OnInit {
+  @ViewChild("profile") profile: ProfileDialogComponent
   public isMessagesOpen: boolean;
   public isNotificationsOpen: boolean;
 
@@ -24,7 +26,7 @@ export class HeaderComponent implements OnInit {
   }
 
   home(){
-    this.router.navigate([''])
+    this.router.navigate(['/rooms'])
   }
 
 }

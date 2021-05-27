@@ -4,43 +4,29 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class StorageService {
-
-  private _roomPassword: string;
-  private _token: string;
-
-  constructor() { 
-  }
-
-  get token(): string{
-    this.sync();
-    return this._token;
-  }
-
-  set token(token: string){
-    this.save();
-    this._token = token;
-  }
-
-  get roomPassword(): string{
-    this.sync();
-    return this._roomPassword;
-  }
-
-  set roomPassword(password: string){
-    this._roomPassword = password;
-    this.save();
+  
+  clear(){
+    localStorage.clear();
   }
 
 
-  public sync(){
-    this._roomPassword = localStorage.getItem("roomPassword")
-    this._token = localStorage.getItem("access_token")
+  getItem(key: string): string | null{
+    return localStorage.getItem(key);
   }
 
-  private save(){
-    localStorage.setItem("roomPassword", this._roomPassword);
-    localStorage.setItem("access_token", this._token);
+  setItem(key: string, val: string){
+    localStorage.setItem(key, val);
   }
+
+  removeItem(key: string){
+    localStorage.removeItem(key);
+  }
+
+
+  hasItem(key: string){
+    return localStorage.getItem(key) !== null;
+  }
+
 
 
 }

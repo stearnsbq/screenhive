@@ -11,19 +11,36 @@ import { StorageService } from './storage.service';
 export class AuthService {
 	private refreshTimer: any;
 	private jwtHelper: JwtHelperService;
-	private loggedIn: boolean;
+	public loggedIn: boolean;
 
 	constructor(private apollo: Apollo, private router: Router, private storage: StorageService) {
 		this.jwtHelper = new JwtHelperService();
 	}
 
 	public user(){
-		return this.jwtHelper.decodeToken(this.storage.token);
+		return this.jwtHelper.decodeToken(this.storage.getItem("access_token"));
 	}
 
+	public async isLoggedIn() {
+		if(!this.jwtHelper.isTokenExpired(this.storage.getItem("access_token"))){
+			this.loggedIn = true;
+			return true;
+		}
 
-	public isLoggedIn() {
-		return !this.jwtHelper.isTokenExpired(this.storage.token);
+		// try to refresh our token!
+
+		try{
+			const {data} = await this.refreshToken().toPromise() as any;
+
+			this.storage.setItem("access_token", data.refreshToken)
+	
+			return true;
+		}catch(err){
+			console.log(err)
+		}
+
+		return false;
+
 	}
 
 	public logout() {
@@ -38,6 +55,7 @@ export class AuthService {
 				localStorage.clear();
 
 				this.apollo.client.resetStore();
+				this.loggedIn = false;
 
 				clearTimeout(this.refreshTimer);
 			},
@@ -48,7 +66,7 @@ export class AuthService {
 	}
 
 	public login(username: string, password: string) {
-		if (this.isLoggedIn()) {
+		if (this.loggedIn) {
 			throw new Error('Already logged in!');
 		}
 
@@ -69,33 +87,10 @@ export class AuthService {
 			.pipe(
 				tap(({ data }) => {
 					localStorage.setItem("access_token", data["login"])
-					this.startRefreshTimer();
 				})
 			);
 	}
 
-	public startRefreshTimer() {
-		const helper = new JwtHelperService();
-
-		const user = helper.decodeToken(localStorage.getItem("access_token")) as any;
-
-		const expires = new Date(user.exp * 1000);
-		const timeout = expires.getTime() - Date.now() - 60 * 1000;
-
-		this.refreshTimer = setInterval(() => {
-			this.refreshToken().subscribe(
-				({ data }) => {
-					const token = data['refreshToken'];
-					console.log(`Token Refresh ${token}`);
-
-					localStorage.setItem("access_token", token);
-				},
-				(err) => {
-					console.log(err); // refresh token died
-				}
-			);
-		}, timeout);
-	}
 
 	public refreshToken() {
 		const query = gql`

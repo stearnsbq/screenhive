@@ -70,7 +70,7 @@ export class RoomComponent implements OnInit, OnDestroy {
     if(this.room){
       this.socketService.leaveRoom(this.roomID).then((val) => {
         this.logging.debug(`Left Room ${this.room.name} with id ${this.roomID}`)
-        delete this.storage.roomPassword;
+        this.storage.removeItem("roomPassword")
       })
     }
   }
@@ -102,9 +102,11 @@ export class RoomComponent implements OnInit, OnDestroy {
 
         if(isPrivate){
 
-          if(this.storage.roomPassword){
-            this.joinRoom(this.roomID, this.storage.roomPassword)
-            return
+
+
+          if(this.storage.hasItem("roomPassword")){
+            this.joinRoom(this.roomID, this.storage.getItem("roomPassword"))
+            return;
           }
 
           this.passwordDialog.open().subscribe(async (password) => {
@@ -115,7 +117,8 @@ export class RoomComponent implements OnInit, OnDestroy {
 
               this.passwordDialog.close();
 
-              this.storage.roomPassword = password;
+              this.storage.setItem("roomPassword", password);
+
 
             }catch(err){
                 this.passwordDialog.error(err);
@@ -127,22 +130,9 @@ export class RoomComponent implements OnInit, OnDestroy {
         }
         
 
-
         await this.joinRoom(this.roomID)
-
-
-        this.room = await this.socketService.joinRoom(this.roomID);
-
-        this.room.messages.push({
-          type: MessageType.Event,
-          user: "You",
-          timestamp: Date.now(),
-          message: "You joined",
-        });
-  
         
   
-
       }catch(err){
         this.router.navigate(['/']);
         console.log(err);
