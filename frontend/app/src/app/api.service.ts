@@ -18,5 +18,24 @@ export class ApiService {
   }
 
 
+  public UserInfo(){
+    const query = gql`
+    query {
+      user{
+        username
+        email
+        dob
+        registered
+        verified
+        role
+      }
+    }
+  `;
+  return this.apollo.query({
+    query
+  });
+  }
+
+
 
 }

@@ -21,7 +21,6 @@ model User{
   registered DateTime @db.Date
   verified Boolean @db.Boolean @default(false)
   lastLogin DateTime @db.Timestamp()
-  role Int @db.SmallInt @default(0)
   avatar String @db.VarChar(255)
   revokedTokens RevokedToken[]
   premiumSubscriptions PremiumSubscription[]
@@ -30,6 +29,7 @@ model User{
   reportsAgainstUser Report[] @relation("reportee")
   friends User[] @relation("UserFriends", references: [id])
   friendsWith User[] @relation("UserFriends", references: [id])
+  roles Role[] 
 }
 
 model RevokedToken{
@@ -68,4 +68,11 @@ model Report{
   reason String @db.Text
   reporterUser User @relation("reporter", fields: [reporter], references: [id])
   reporteeUser User @relation("reportee", fields: [reportee], references: [id])
+}
+
+
+model Role{
+  id Int @id
+  name String @db.VarChar(50)
+  users User[] 
 }

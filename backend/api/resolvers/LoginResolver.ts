@@ -15,7 +15,6 @@ export class LoginResolver {
 	@Query(() => String)
 	async refreshToken(@Ctx() { cookies, res, prisma }: { cookies: any; res: Response; prisma: PrismaClient }) {
 		try {
-			console.log(cookies)
 			const token = cookies.refresh_token;
 
 			if ((await prisma.revokedToken.count({ where: { token: token.split('.')[2] } })) > 0) {

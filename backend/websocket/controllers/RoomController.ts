@@ -274,8 +274,7 @@ export class RoomController {
           return socket.emit('error', { err: 'User is not in the room!' })
         }
 
-		
-
+	
         const newMessage = {
           user: user.username,
           timestamp: Date.now(),

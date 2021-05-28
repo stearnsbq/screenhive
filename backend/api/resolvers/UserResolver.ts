@@ -20,6 +20,12 @@ export class UserResolver {
 	}
 
 
+	@FieldResolver()
+	public password(){
+		return "";
+	}
+
+
 
 	@FieldResolver(() => [ String ])
 	public async friends(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
@@ -48,7 +54,6 @@ export class UserResolver {
 			}
 		}))?.reports || [];
 	}
-
 
 	@FieldResolver(() => [ Report ])
 	public async reportsAgainstUser(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {

@@ -1,3 +1,5 @@
+
+
 .dialog-container{
     position: fixed;
     z-index: 99;
@@ -62,6 +64,115 @@
     }
 
     align-self: center;
+
+
+}
+
+.sidenav-controls{
+    color: white;
+
+    ul{
+        list-style: none;
+        padding: 0;
+    }
+
+
+    li{
+        cursor: pointer;
+        padding: 15px;
+
+        img{
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+    }
+
+    li:hover{
+        background-color: rgba($color: #000000, $alpha: 0.3);
+    }
+
+
+}
+
+.active{
+    background-color: rgba($color: #000000, $alpha: 0.3);
+}
+
+.profile-main{
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-main-header{
+    flex: 0.20;
+    background-color: #ff8200;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    img{
+        flex: 1;
+        width: 30px;
+        height: 30px;
+        background-color: transparent;
+        align-self: flex-end;
+        flex-shrink: 0;
+        flex-grow: 0;
+        margin-right: 15px;
+        margin-top: 15px;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+
+    $hover-color: rgba($color: #000000, $alpha: 0.3);
+
+    img:hover{
+        background-color: $hover-color;
+        border: 2px solid $hover-color;
+    }
+
+
+    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.25);
+
+
+    h2{
+        margin-left: 10px;
+        margin-bottom: 5px;
+        vertical-align: middle;
+    }
+}
+
+.account{
+    display: flex;
+    justify-content: center;
+}
+
+.user-info{
+    border-radius: 10px;
+    padding: 15px;
+    color: white;
+    background-color: #313131;
+
+    p{
+        margin-left: 3px;
+    }
+
+
+    label{
+
+        color: rgba($color: white, $alpha: 0.5);
+    }
+
+    span{
+        color: #ff8200;
+        cursor: pointer;
+    }
+
+    span:hover{
+        text-decoration: underline;
+    }
 
 
 }
