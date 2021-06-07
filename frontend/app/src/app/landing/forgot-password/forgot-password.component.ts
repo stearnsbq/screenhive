@@ -14,7 +14,9 @@ export class ForgotPasswordComponent implements OnInit {
   public forgotPasswordGroup: FormGroup;
 
 
-  constructor() { }
+  constructor() { 
+    this.modeChange = new EventEmitter();
+  }
 
   ngOnInit(): void {
   }

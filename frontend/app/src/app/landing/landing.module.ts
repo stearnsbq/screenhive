@@ -5,6 +5,7 @@ import { RegisterComponent } from './register/register.component';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 import { LandingComponent } from './landing.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { LandingRoutingModule } from './landing-routing.module';
 
 
 
@@ -13,7 +14,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    LandingRoutingModule
   ]
 })
 export class LandingModule { }
