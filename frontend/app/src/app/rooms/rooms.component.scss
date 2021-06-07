@@ -29,6 +29,10 @@
   background-color: #262626;
   width: 85%;
   height: 100%;
+  .divider{
+    margin-left: 155px;
+    margin-right: 155px;
+  }
 }
 
 .sidenav {
@@ -64,9 +68,17 @@
 
   img {
     flex: 0.1;
-    padding-right: 25px;
+    margin-right: 25px;
+    padding: 2px;
     vertical-align: middle;
+    cursor: pointer;
   }
+
+  img:hover{
+    background-color: rgba($color: white, $alpha: 0.1);
+    border-radius: 50%;
+  }
+
 }
 
 .rooms-header {
@@ -74,6 +86,22 @@
   color: white;
   margin-left: 150px;
   margin-right: 150px;
+
+  display: flex;
+
+  img{
+    margin-left: 15px;
+    height: 32px;
+    width: 32px;
+    cursor: pointer;
+  }
+
+  img:hover{
+    background-color: rgba($color: white, $alpha: 0.1);
+    border-radius: 50%;
+  }
+
+
 
   h1 {
     margin-left: 20px;

@@ -1,100 +1,244 @@
-import { Resolver, Query, Mutation, Ctx, Arg, Authorized, FieldResolver, Root, ResolverInterface } from 'type-graphql';
-import { Service } from 'typedi';
-import { User, RevokedToken, Report } from '@generated/type-graphql';
-import { Role } from '../enum/Role';
-import { PrismaClient } from '@prisma/client';
-import { Response } from 'express';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Ctx,
+  Arg,
+  Authorized,
+  FieldResolver,
+  Root,
+  ResolverInterface,
+} from 'type-graphql'
+import { Service } from 'typedi'
+import { User, RevokedToken, Report } from '@generated/type-graphql'
+import { Role } from '../enum/Role'
+import { PrismaClient } from '@prisma/client'
+import { Response } from 'express'
+import argon2 from 'argon2';
 
 @Service()
 @Resolver((of) => User)
 export class UserResolver {
-	constructor() {}
+  constructor() {}
 
-	@FieldResolver(() => [ RevokedToken ])
-	public async revokedTokens(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
-		return await prisma.revokedToken.findMany({
-			where: {
-				userId: user.id
-			}
-		});
-	}
+  @FieldResolver()
+  public password() {
+    return ''
+  }
 
+  @FieldResolver(() => [String])
+  public async friends(
+    @Root() user: User,
+    @Ctx() { prisma }: { prisma: PrismaClient },
+  ) {
+    return (
+      (
+        await prisma.user.findUnique({
+          where: {
+            id: user.id,
+          },
+          select: {
+            friends: {
+              select: {
+                username: true,
+              },
+            },
+          },
+        })
+      )?.friends || []
+    )
+  }
 
-	@FieldResolver()
-	public password(){
-		return "";
-	}
+  @FieldResolver(() => [Report])
+  public async reports(
+    @Root() user: User,
+    @Ctx() { prisma }: { prisma: PrismaClient },
+  ) {
+    return (
+      (
+        await prisma.user.findUnique({
+          where: {
+            id: user.id,
+          },
+          select: {
+            reports: true,
+          },
+        })
+      )?.reports || []
+    )
+  }
 
+  @FieldResolver(() => [Report])
+  public async reportsAgainstUser(
+    @Root() user: User,
+    @Ctx() { prisma }: { prisma: PrismaClient },
+  ) {
+    return (
+      (
+        await prisma.user.findUnique({
+          where: {
+            id: user.id,
+          },
+          select: {
+            reportsAgainstUser: true,
+          },
+        })
+      )?.reportsAgainstUser || []
+    )
+  }
 
+  @Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
+  @Mutation((returns) => Boolean)
+  async updateUsername(
+    @Arg('username') username: string,
+    @Ctx()
+    { user, res, prisma }: { user: any; res: Response; prisma: PrismaClient },
+  ) {
 
-	@FieldResolver(() => [ String ])
-	public async friends(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
-		return (await prisma.user.findUnique({
-			where: {
+	try{
+
+		const usr = await prisma.user.update({
+			where:{
 				id: user.id
 			},
-			select:{
-				friends: {
-					select: {
-						username: true
-					}
-				}
+			data:{
+				username
 			}
-		}))?.friends || [];
+		})
+
+
+		return !!usr;
+	}catch(err){
+		res.status(500)
+		throw new Error(err);
 	}
 
-	@FieldResolver(() => [ Report ])
-	public async reports(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
-		return (await prisma.user.findUnique({
-			where: {
+  }
+
+  @Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
+  @Mutation((returns) => Boolean)
+  async updateEmail(
+    @Arg('email') email: string,
+    @Ctx()
+    { user, res, prisma }: { user: any; res: Response; prisma: PrismaClient },
+  ) {
+
+
+	try{
+
+		const usr = await prisma.user.update({
+			where:{
 				id: user.id
 			},
-			select:{
-				reports: true
+			data:{
+				email
 			}
-		}))?.reports || [];
+		})
+
+
+		return !!usr;
+	}catch(err){
+		res.status(500)
+		throw new Error(err);
 	}
 
-	@FieldResolver(() => [ Report ])
-	public async reportsAgainstUser(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
-		return (await prisma.user.findUnique({
-			where: {
+
+
+  }
+
+  @Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
+  @Mutation((returns) => Boolean)
+  async updateDOB(
+    @Arg('dob') dob: string,
+    @Ctx()
+    { user, res, prisma }: { user: any; res: Response; prisma: PrismaClient },
+  ) {
+
+
+	try{
+
+		const usr = await prisma.user.update({
+			where:{
 				id: user.id
 			},
-			select:{
-				reportsAgainstUser: true
+			data:{
+				dob
 			}
-		}))?.reportsAgainstUser || [];
+		})
+
+
+		return !!usr;
+	}catch(err){
+		res.status(500)
+		throw new Error(err);
 	}
 
-	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
-	@Query((returns) => User)
-	async user(@Ctx() { user, prisma }: { user: any; prisma: PrismaClient }) {
-		return await prisma.user.findUnique({
-			where: {
-				id: user.id
-			}
-		});
-	}
 
-	@Authorized<Role>(Role.Admin, Role.SuperAdmin)
-	@Mutation((returns) => User)
-	async updateRole(
-		@Arg('role') role: Role,
-		@Ctx() { user, res, prisma }: { user: any; res: Response; prisma: PrismaClient }
-	) {
-		try {
-			return await prisma.user.update({
-				where: {
-					id: user.id
-				},
-				data: {
-					role: role
-				}
-			});
-		} catch (err) {
-			res.status(401);
-			throw new Error('Not Authenticated');
+  }
+
+  @Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
+  @Mutation((returns) => Boolean)
+  async changePassword(
+    @Arg('password') password: string,
+    @Arg('confirmPassword') confirmPassword: string,
+    @Ctx()
+    { user, res, prisma }: { user: any; res: Response; prisma: PrismaClient },
+  ) {
+
+	try{
+
+		if(password !== confirmPassword){
+			return false;
 		}
+
+
+		const usr = await prisma.user.update({
+			where:{
+				id: user.id
+			},
+			data:{
+				password: await argon2.hash(password)
+			}
+		})
+
+
+		return !!usr;
+	}catch(err){
+		res.status(500)
+		throw new Error(err);
 	}
+
+
+
+  }
+
+  @Authorized()
+  @Query((returns) => User)
+  async user(@Ctx() { user, prisma }: { user: any; prisma: PrismaClient }) {
+    return await prisma.user.findUnique({
+      where: {
+        id: user.id,
+      },
+    })
+  }
+
+
+  @Query((returns) => Boolean)
+  async checkIfUserExists(
+    @Arg('username') username: string,
+    @Ctx() { res, prisma }: { res: Response; prisma: PrismaClient },
+  ) {
+    try {
+      return (
+        (await prisma.user.count({
+          where: {
+            username,
+          },
+        })) > 0
+      )
+    } catch (err) {
+      res.status(500)
+      throw new Error(err)
+    }
+  }
 }

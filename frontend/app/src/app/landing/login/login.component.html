@@ -1,0 +1,29 @@
+<div class="form-header">
+    <h1>Login</h1>
+</div>
+
+<button class="login-form-google-button">Continue With Google</button>
+<div class="login-form-divider">
+    <span class="divider"></span>
+    <p>Or</p>
+    <span class="divider"></span>
+</div>
+<div class="form-input">
+    <div class="form-invalid" *ngIf="submitted && failed">
+        <h3>Invalid Username or Password</h3>
+    </div>
+    <form [formGroup]="loginGroup" (ngSubmit)="onLogin()">
+        <label for="username">Username</label>
+        <input formControlName="username" type="text">
+        <div *ngIf="submitted && loginGroup.controls.username.errors"></div>
+        <label for="password">Password</label>
+        <input formControlName="password" type="password">
+        <div *ngIf="submitted && loginGroup.controls.password.errors"></div>
+        <button class="button">LOGIN</button>
+    </form>
+</div>
+
+<div class="login-form-options">
+    <a (click)="modeChange.emit('register')">Register</a>
+    <a (click)="modeChange.emit('forgotPassword')">Forgot Password?</a>
+</div>

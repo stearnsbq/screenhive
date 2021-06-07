@@ -4,7 +4,7 @@
             <div class="profile-sidenav">
                 <div class="sidenav-header">
                     <img src="https://via.placeholder.com/100">
-                    <h2>{{user.username}}</h2>
+                    <h2>{{user.username}}<span>#{{user.discriminator}}</span></h2>
                 </div>
                 <div class="divider"></div>
                 <div class="sidenav-controls">
@@ -25,35 +25,62 @@
                     </ng-container>
 
                 </div>
+
                 <ng-container [ngSwitch]="section">
 
                     <div *ngSwitchCase="Section.Account" class="account">
 
                         <div class="user-info">
-
-                            <section class="username">
+                            <div class="user-info-section">
                                 <label>Username</label>
-                                <p>{{user.username}}</p>
-                                <button>Edit</button>
-                            </section>
+                                <section class="username">
+                                    <p>{{user.username}}</p>
+                                    <button>Edit</button>
+                                </section>
+                            </div>
 
-                            <section class="email">
+
+                            <div class="user-info-section">
                                 <label>Email</label>
-                                <p #emailText [revealed]="false">{{emailText.revealed ? user.email : censorEmail(user.email)}}</p>
-                                <span *ngIf="!emailText.revealed" (click)="emailText.revealed = true">Reveal</span>
-                                <span *ngIf="emailText.revealed" (click)="emailText.revealed = false">Hide</span>
-                                <button>Edit</button>
-                            </section>
+                                <section class="email">
+                                    <p #emailText [revealed]="false">{{emailText.revealed ? user.email : censorEmail(user.email)}}</p>
+                                    <span *ngIf="!emailText.revealed" (click)="emailText.revealed = true">Reveal</span>
+                                    <span *ngIf="emailText.revealed" (click)="emailText.revealed = false">Hide</span>
+                                    <button>Edit</button>
+                                </section>
+                            </div>
 
-                            <section class="date-of-birth">
+
+                            <div class="user-info-section">
                                 <label>Date of Birth</label>
-                                <p>{{user.dob}}</p>
-                                <button>Edit</button>
-                            </section>
+                                <section class="date-of-birth">
+                                    <p>{{user.dob | date}}</p>
+                                    <button>Edit</button>
+                                </section>
+                            </div>
 
+                            <div class="user-info-section">
+                                <label>Password</label>
+                                <section class="password">
+                                    <p>*********</p>
+                                    <button>Edit</button>
+                                </section>
+                            </div>
+
+                            <div class="user-info-section">
+                                <label>Verified</label>
+                                <section class="date-of-birth">
+                                    <p>{{user.verified ? "Yes": "No"}}</p>
+                                    <span *ngIf="!user.verified" >Resend Verification Email</span>
+                                </section>
+                            </div>
                         </div>
 
+                        <div class="body-divider"></div>
 
+                        <div class="two-factor-settings">
+                            <h4>Two Factor Settings</h4>
+                        </div>
 
                     </div>
 

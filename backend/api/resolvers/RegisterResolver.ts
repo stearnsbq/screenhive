@@ -14,32 +14,11 @@ export class RegisterResolver {
 	@Mutation((returns) => Boolean)
 	public async verify(@Arg('token') token: string, @Ctx() { prisma, res }: { prisma: PrismaClient; res: Response }) {
 		try {
-			const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as { id: number };
-
-			const sig = token.split('.')[2];
-
-			const tok = await prisma.verificationToken.findFirst({
-				where: {
-					token: sig
-				}
-			});
-
-			if (!tok) {
-				throw new Error();
-			}
-
-			await prisma.verificationToken.delete({
-				where: {
-					userId_token: {
-						userId: decoded.id,
-						token: sig
-					}
-				}
-			});
+			const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as { email: string };
 
 			await prisma.user.update({
 				where: {
-					id: decoded.id
+					email: decoded.email
 				},
 				data: {
 					verified: true
@@ -53,20 +32,27 @@ export class RegisterResolver {
 		}
 	}
 
-	@Mutation((returns) => User)
+	@Mutation((returns) => Boolean)
 	public async register(
 		@Arg('username') username: string,
 		@Arg('password') password: string,
+		@Arg('confirmPassword') confirmPassword: string,
 		@Arg('email') email: string,
 		@Arg('dob') dob: number,
 		@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient }
 	) {
 		try {
+
+			if(password !== confirmPassword){
+				throw new Error('Passwords don\'t match!');
+			}
+
 			const newUser = await prisma.user.create({
 				data: {
 					username,
 					password: await argon2.hash(password),
 					email,
+					discriminator: (Math.floor(Math.random() * (9999 - 1 + 1)) + 1).toString().padStart(4, '0'),
 					dob: new Date(dob),
 					registered: new Date(),
 					lastLogin: new Date()
@@ -74,18 +60,18 @@ export class RegisterResolver {
 			});
 
 			const verificationToken = jsonwebtoken.sign(
-				{email},
+				{id: newUser.id, email},
 				process.env.JWT_SECRET as string,
-				{ expiresIn: '30m' }
+				{ expiresIn: '5hr' }
 			);
 
 			// send verification email here
 
 
-			return newUser;
+			return !!newUser;
 		} catch (err) {
 			res.status(400);
-			throw new Error('Failed to register!');
+			throw new Error(err);
 		}
 	}
 }

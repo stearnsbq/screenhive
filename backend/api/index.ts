@@ -60,7 +60,7 @@ async function main() {
 
 				context.user = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as any;
 
-				return roles.some((element) => element === context.user.role)
+				return true
             }catch(err){
 				context.res.status(401);
                 return false;

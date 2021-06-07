@@ -6,100 +6,139 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 import { StorageService } from './storage.service';
 
 @Injectable({
-	providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-	private refreshTimer: any;
-	private jwtHelper: JwtHelperService;
-	public loggedIn: boolean;
+  private jwtHelper: JwtHelperService;
+  public loggedIn: boolean;
 
-	constructor(private apollo: Apollo, private router: Router, private storage: StorageService) {
-		this.jwtHelper = new JwtHelperService();
-	}
+  constructor(
+    private apollo: Apollo,
+    private router: Router,
+    private storage: StorageService
+  ) {
+    this.jwtHelper = new JwtHelperService();
+  }
 
-	public user(){
-		return this.jwtHelper.decodeToken(this.storage.getItem("access_token"));
-	}
+  public user() {
+    return this.jwtHelper.decodeToken(this.storage.getItem('access_token'));
+  }
 
-	public async isLoggedIn() {
-		if(!this.jwtHelper.isTokenExpired(this.storage.getItem("access_token"))){
-			this.loggedIn = true;
-			return true;
-		}
+  public async isLoggedIn() {
+    if (!this.jwtHelper.isTokenExpired(this.storage.getItem('access_token'))) {
+      this.loggedIn = true;
+      return this.loggedIn;
+    }
 
-		// try to refresh our token!
+    // try to refresh our token!
 
-		try{
-			const {data} = await this.refreshToken().toPromise() as any;
+    try {
+      const { data } = (await this.refreshToken().toPromise()) as any;
 
-			this.storage.setItem("access_token", data.refreshToken)
-	
-			return true;
-		}catch(err){
-			console.log(err)
-		}
+      this.storage.setItem('access_token', data.refreshToken);
 
-		return false;
+      return true;
+    } catch (err) {
+      console.log(err);
+    }
 
-	}
+    return false;
+  }
 
-	public logout() {
-		const mutation = gql`
-			mutation {
-				logout
-			}
-		`;
+  public register(
+    username: string,
+    password: string,
+    confirmPassword: string,
+    email: string,
+    dob: number
+  ) {
+    const mutation = gql`
+      mutation Register(
+        $username: String!
+        $password: String!
+        $confirmPassword: String!
+        $email: String!
+        $dob: Float!
+      ) {
+        register(
+          username: $username
+          password: $password
+          email: $email
+          dob: $dob
+          confirmPassword: $confirmPassword
+        )
+      }
+    `;
 
-		this.apollo.mutate({ mutation }).subscribe(
-			() => {
-				localStorage.clear();
+    return this.apollo.mutate({
+      mutation,
+      variables: {
+        username,
+        password,
+        email,
+        dob,
+        confirmPassword,
+      },
+    });
+  }
 
-				this.apollo.client.resetStore();
-				this.loggedIn = false;
+  public logout() {
+    const mutation = gql`
+      mutation {
+        logout
+      }
+    `;
 
-				clearTimeout(this.refreshTimer);
-			},
-			(err) => {
-				console.log(err);
-			}
-		);
-	}
+    this.apollo.mutate({ mutation }).subscribe(
+      () => {
+        this.storage.clear();
 
-	public login(username: string, password: string) {
-		if (this.loggedIn) {
-			throw new Error('Already logged in!');
-		}
+        this.apollo.client.resetStore();
 
-		const mutation = gql`
-			mutation Login($username: String!, $password: String!) {
-				login(username: $username, password: $password)
-			}
-		`;
+        this.loggedIn = false;
 
-		return this.apollo
-			.mutate({
-				mutation,
-				variables: {
-					username,
-					password
-				}
-			})
-			.pipe(
-				tap(({ data }) => {
-					localStorage.setItem("access_token", data["login"])
-				})
-			);
-	}
+        this.router.navigate(['']);
+      },
+      (err) => {
+        console.log(err);
+      }
+    );
+  }
 
+  public login(username: string, password: string) {
+    if (this.loggedIn) {
+      throw new Error('Already logged in!');
+    }
 
-	public refreshToken() {
-		const query = gql`
-			query {
-				refreshToken
-			}
-		`;
-		return this.apollo.query({
-			query
-		});
-	}
+    const mutation = gql`
+      mutation Login($username: String!, $password: String!) {
+        login(username: $username, password: $password)
+      }
+    `;
+
+    return this.apollo
+      .mutate({
+        mutation,
+        variables: {
+          username,
+          password,
+        },
+      })
+      .pipe(
+        tap(({ data }) => {
+          this.storage.setItem('access_token', data['login']);
+        })
+      );
+  }
+
+  public refreshToken() {
+    const query = gql`
+      query {
+        refreshToken
+      }
+    `;
+    return this.apollo.query({
+      query,
+    });
+  }
 }

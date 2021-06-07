@@ -18,6 +18,24 @@ export class ApiService {
   }
 
 
+  public checkIfUserNameExists(username: string){
+    const query = gql`
+    mutation CheckIfUserExists($username: String!) {
+      checkIfUserExists(username: $username)
+    }
+  `;
+
+
+  return this.apollo.query({
+    query,
+    variables:{
+      username
+    }
+  })
+
+  }
+
+
   public UserInfo(){
     const query = gql`
     query {
@@ -27,7 +45,7 @@ export class ApiService {
         dob
         registered
         verified
-        role
+        discriminator
       }
     }
   `;

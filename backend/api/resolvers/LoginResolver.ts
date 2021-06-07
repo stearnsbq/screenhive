@@ -5,6 +5,7 @@ import { Service } from 'typedi';
 import { Role } from '../enum/Role';
 import { Response } from 'express';
 import { Prisma, PrismaClient, User } from '.prisma/client';
+import { Token } from 'graphql';
 
 @Service()
 @Resolver()
@@ -28,11 +29,14 @@ export class LoginResolver {
 			const user = await prisma.user.findUnique({
 				where: {
 					id: refresh_token.id
+				},
+				include:{
+					roles: true
 				}
-			}) as User;
+			}) as any;
 
-			return jsonwebtoken.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET as string, {
-				expiresIn: '10s',
+			return jsonwebtoken.sign({ id: user.id, username: user.username, roles: user.roles }, process.env.JWT_SECRET as string, {
+				expiresIn: '15m',
 				issuer: 'screenhive.io',
 				audience: 'screenhive_users'
 			});
@@ -52,6 +56,9 @@ export class LoginResolver {
 			const user = await prisma.user.findUnique({
 				where: {
 					username
+				},
+				include:{
+					roles: true
 				}
 			});
 
@@ -76,7 +83,7 @@ export class LoginResolver {
 					}
 				});
 
-				return jsonwebtoken.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET as string, {
+				return jsonwebtoken.sign({ id: user.id, username: user.username, roles: user.roles }, process.env.JWT_SECRET as string, {
 					expiresIn: '15m',
 					issuer: 'screenhive.io',
 					audience: 'screenhive_users'
@@ -105,7 +112,8 @@ export class LoginResolver {
 		prisma: PrismaClient;
 	}) {
 		try {
-			const decoded = jsonwebtoken.verify(cookies.refresh_token, process.env.JWT_SECRET as string) as any;
+			const token = cookies.refresh_token;
+			const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as any;
 
 			res.clearCookie("refresh_token");
 
@@ -113,8 +121,7 @@ export class LoginResolver {
 				decoded &&
 				!!await prisma.revokedToken.create({
 					data: {
-						userId: user.id,
-						token: cookies.refresh_token.split('.')[2],
+						token: token.split('.')[2],
 						expiry: new Date(decoded.exp * 1000)
 					}
 				})
@@ -124,4 +131,55 @@ export class LoginResolver {
 			return false;
 		}
 	}
+
+
+	@Query(() => Boolean)
+	async resetPassword(@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient },  @Arg("token") token: string, @Arg("newPassword") newPassword: string){
+
+		try{
+
+			if(!jsonwebtoken.verify(token, process.env.JWT_SECRET as string)){
+				throw new Error("Invalid Token!")
+			}
+
+			const decoded = jsonwebtoken.decode(token) as any;
+
+
+			await prisma.user.update({
+				where: {
+					email: decoded.email
+				},
+				data:{
+					password: await argon2.hash(newPassword)
+				}
+			})
+
+
+			return true;
+		}catch(err){
+			res.status(500);
+			throw new Error(err)
+		}
+
+	}
+
+
+
+	@Query(() => Boolean)
+	async resetPasswordRequest(@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient },  @Arg("email") email: string){
+	
+			if((await prisma.user.count({where: {email}})) > 0){
+
+				const token = jsonwebtoken.sign({email}, process.env.JWT_SECRET as string);
+
+
+				// send reset password email here!
+
+
+			}
+
+			return true;
+	}
+
+
 }

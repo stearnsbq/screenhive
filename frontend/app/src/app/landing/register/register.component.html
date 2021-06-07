@@ -1,0 +1,43 @@
+<div class="back-button-container">
+    <button class="back-button" (click)="modeChange.emit('login')"><img src="assets/icons/back.svg" ></button>
+</div>
+<div class="form-header">
+    <h1>Register</h1>
+</div>
+
+<div class="form-input">
+    <form [formGroup]="registerGroup" (ngSubmit)="onRegister()">
+
+        <label for="username">Username</label>
+        <input formControlName="username" type="text">
+        <div *ngIf="submitted && registerGroup.controls.username.errors">
+            * Username is required!
+        </div>
+
+        <label for="email">Email</label>
+        <input formControlName="email" type="text">
+        <div *ngIf="submitted && registerGroup.controls.email.errors">
+            * Email is required!
+        </div>
+
+        <label for="password">Password</label>
+        <input formControlName="password" type="password">
+        <div *ngIf="submitted && registerGroup.controls.password.errors">
+            * Password is required!
+        </div>
+
+        <label for="confirmPassword">Confirm Password</label>
+        <input formControlName="confirmPassword" type="password">
+        <div *ngIf="submitted && registerGroup.controls.confirmPassword.errors">
+            * Passwords dont match!
+        </div>
+
+        <label for="dob">Date of Birth</label>
+        <input formControlName="dob" type="date">
+        <div *ngIf="submitted && registerGroup.controls.dob.errors">
+
+        </div>
+
+        <button class="button">Register</button>
+    </form>
+</div>

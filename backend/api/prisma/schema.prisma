@@ -15,14 +15,14 @@ datasource db {
 model User{
   id Int @id @default(autoincrement())
   username String @db.VarChar(50) @unique
+  discriminator String @db.Char(4)
   email String @db.VarChar(100) @unique
   password String @db.VarChar(255)
   dob DateTime @db.Date
   registered DateTime @db.Date
   verified Boolean @db.Boolean @default(false)
   lastLogin DateTime @db.Timestamp()
-  avatar String @db.VarChar(255)
-  revokedTokens RevokedToken[]
+  avatar String? @db.VarChar(255)
   premiumSubscriptions PremiumSubscription[]
   accountOffenses AccountOffense[]
   reports Report[] @relation("reporter")
@@ -33,13 +33,9 @@ model User{
 }
 
 model RevokedToken{
-  userId Int @db.Integer
-  token String  @db.VarChar(255)
+  token String @id @db.VarChar(255)
   expiry DateTime @db.Timestamp()
-  user User @relation(fields: [userId], references: [id])
-  @@id([userId, token])
 }
-
 
 model PremiumSubscription {
   id Int  @id @default(autoincrement())

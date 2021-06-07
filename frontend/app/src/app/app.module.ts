@@ -4,7 +4,6 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { LoginComponent } from './login/login.component';
 import { CookieModule } from 'ngx-cookie';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SocketIoModule } from 'ngx-socket-io';
@@ -16,9 +15,10 @@ import { setContext } from '@apollo/client/link/context';
 import { CookieService } from 'ngx-cookie';
 import { HeaderModule } from './header/header.module';
 import { TokenRefreshInterceptor } from './token-refresh.interceptor';
+import { StorageService } from './storage.service';
 
 
-export function createApollo(httpLink: HttpLink, cookies: CookieService): ApolloClientOptions<any> {
+export function createApollo(httpLink: HttpLink, cookies: CookieService, storage: StorageService): ApolloClientOptions<any> {
 	const basic = setContext((operation, context) => ({
 		headers: {
 			Accept: 'charset=utf-8'
@@ -26,7 +26,7 @@ export function createApollo(httpLink: HttpLink, cookies: CookieService): Apollo
 	}));
 
 	const auth = setContext(async (operation: GraphQLRequest, context) => {
-		const token = localStorage.getItem("access_token")
+		const token = storage.getItem("access_token")
 
 		return token ? {
 			headers: {
@@ -50,7 +50,7 @@ export function createApollo(httpLink: HttpLink, cookies: CookieService): Apollo
 
 @NgModule({
   declarations: [
-    AppComponent, LoginComponent
+    AppComponent
   ],
   imports: [
     BrowserModule,
@@ -67,7 +67,7 @@ export function createApollo(httpLink: HttpLink, cookies: CookieService): Apollo
     {
 			provide: APOLLO_OPTIONS,
 			useFactory: createApollo,
-			deps: [ HttpLink, CookieService ]
+			deps: [ HttpLink, CookieService, StorageService ]
 		}
   ],
   bootstrap: [AppComponent]

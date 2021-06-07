@@ -1,0 +1,23 @@
+<div class="content">
+    <div class="login-box">
+        <div class="logo-box shadow">
+            <img src="/assets/logo.png">
+        </div>
+
+        <ng-container [ngSwitch]="mode">
+
+            <div *ngSwitchCase="'register'" class="register form">
+                <app-register (modeChange)="mode = $event"></app-register>
+            </div>
+
+            <div *ngSwitchCase="'forgotPassword'" class="form">
+                <app-forgot-password (modeChange)="mode = $event"></app-forgot-password>
+            </div>
+
+            <div *ngSwitchDefault class="form">
+                <app-login (modeChange)="mode = $event"></app-login>
+            </div>
+        </ng-container>
+
+    </div>
+</div>

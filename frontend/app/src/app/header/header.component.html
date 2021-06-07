@@ -25,13 +25,13 @@
   <div class="spacer"></div>
 
   <div class="controls">
-    <img (click)="isMessagesOpen = !isMessagesOpen; isNotificationsOpen = false" class="messages" src="/assets/icons/messages.svg" />
-    <img (click)="isNotificationsOpen = !isNotificationsOpen; isMessagesOpen = false" class="notifications" src="/assets/icons/notification.svg" />
-    <img class="avatar" (click)="profile.open()" src="https://via.placeholder.com/35" />
+    <img (click)="isMessagesOpen = !isMessagesOpen; isNotificationsOpen = false; isUserOpen = false" class="messages" src="/assets/icons/messages.svg" />
+    <img (click)="isNotificationsOpen = !isNotificationsOpen; isMessagesOpen = false; isUserOpen = false" class="notifications" src="/assets/icons/notification.svg" />
+    <img class="avatar" (click)="isUserOpen = !isUserOpen; isNotificationsOpen = false; isMessagesOpen = false " src="https://via.placeholder.com/35" />
   </div>
 
   <div class="messages-dropdown" *ngIf="isMessagesOpen">
-    <app-dropdown>
+    <app-dropdown [width]="250">
       <div header>
         <h2>Messages</h2>
       </div>
@@ -42,7 +42,7 @@
   </div>
 
   <div class="notifications-dropdown" *ngIf="isNotificationsOpen">
-    <app-dropdown>
+    <app-dropdown [width]="250">
       <div header>
         <h2>Notifications</h2>
       </div>
@@ -51,6 +51,26 @@
       </div>
     </app-dropdown>
   </div>
+
+
+  <div class="user-dropdown" *ngIf="isUserOpen">
+    <app-dropdown [width]="150">
+      <div header>
+        <h2>{{user.username}}</h2>
+        <span></span>
+      </div>
+      <div body>
+       <ul>
+         <li (click)="profile.open()">Profile</li>
+         <li>Help & Feedback</li>
+         <li (click)="auth.logout()">Logout</li>
+       </ul>
+      </div>
+    </app-dropdown>
+
+  </div>
+
+
 </div>
 
 

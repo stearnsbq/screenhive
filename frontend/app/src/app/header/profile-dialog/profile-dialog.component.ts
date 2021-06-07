@@ -24,7 +24,7 @@ export class ProfileDialogComponent implements OnInit {
 
   constructor(public api : ApiService) { 
     this.section = Section.Account;
-    this.isOpen = true;
+    this.isOpen = false;
   }
 
   ngOnInit(): void {

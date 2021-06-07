@@ -63,10 +63,41 @@
   }
 }
 
+
+
+.user-dropdown{
+  position: absolute;
+  top: 65px;
+  right: 175px;
+  color: white;
+  background-color: #48484b;
+
+  ul{
+    margin: 0;
+    list-style: none;
+    padding: 0;
+    li{
+      margin: -9px;
+      padding: 10px;
+      cursor: pointer;
+    }
+
+
+    li:hover{
+      background-color: #606064;
+    }
+
+  }
+
+
+}
+
+
+
 .messages-dropdown {
   position: absolute;
   top: 65px;
-  right: 479px;
+  right: 405px;
   p {
     margin: 0;
   }
@@ -75,7 +106,7 @@
 .notifications-dropdown {
   position: absolute;
   top: 65px;
-  right: 415px;
+  right: 340px;
   p {
     margin: 0;
   }
