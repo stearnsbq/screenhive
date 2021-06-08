@@ -12,6 +12,7 @@ export class RegisterComponent implements OnInit {
 
   public registerGroup: FormGroup;
   public submitted: boolean;
+  public failed: boolean;
   @Output() modeChange: EventEmitter<string>
   
   constructor(private formBuilder: FormBuilder, private authService: AuthService, private router: Router) {
@@ -41,18 +42,20 @@ export class RegisterComponent implements OnInit {
   public onRegister(){
 		this.submitted = true;
 
-		const {username, password, confirmPassword, email, dob} = this.registerGroup.controls;
+		const {username, password, confirmPassword, email, dob, captcha} = this.registerGroup.controls;
 
-		// if (this.registerGroup.valid) {
-		// 	this.authService.register(username.value, password.value, confirmPassword.value, email.value, Date.parse(dob.value)).subscribe(
-		// 		({ data }) => {
-		// 			this.mode = 'login'
-		// 		},
-		// 		(err) => {
-		// 			this.failed = true;
-		// 		}
-		// 	);
-		// }
+		console.log(username.value, password.value, confirmPassword.value, email.value, dob.value, captcha.value)
+
+		if (this.registerGroup.valid) {
+			this.authService.register(username.value, password.value, confirmPassword.value, email.value, Date.parse(dob.value), captcha.value).subscribe(
+				({ data }) => {
+					this.modeChange.emit('login')
+				},
+				(err) => {
+					this.failed = true;
+				}
+			);
+		}
 	}
 
 }

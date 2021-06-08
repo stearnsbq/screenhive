@@ -15,7 +15,7 @@ import cors from 'cors';
 import csurf from 'csurf';
 const cookieParser = require('cookie-parser');
 const helmet = require("helmet")
-
+import {createTransport, createTestAccount} from 'nodemailer';
 
 
 async function main() {
@@ -41,6 +41,21 @@ async function main() {
 
 	app.get("/csrf", (req, res) => {
 		res.json({})
+	})
+
+
+
+	const testAccount = await createTestAccount();
+
+
+	const mail = createTransport({
+		host: "smtp.ethereal.email",
+		port: 587,
+		secure: false,
+		auth:{
+			user: testAccount.user, 
+			pass: testAccount.pass, 
+		}
 	})
 
 	const schema = await buildSchema({
@@ -73,7 +88,7 @@ async function main() {
 
 	const server = new ApolloServer({
 		schema,
-		context: ({res, req}) => ({ res: res, req: req, cookies: req?.cookies || {}, prisma }),
+		context: ({res, req}) => ({ res: res, req: req, cookies: req?.cookies || {}, prisma, mail }),
 		playground: true,
 	});
 

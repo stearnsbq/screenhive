@@ -50,7 +50,8 @@ export class AuthService {
     password: string,
     confirmPassword: string,
     email: string,
-    dob: number
+    dob: number,
+    captcha: string,
   ) {
     const mutation = gql`
       mutation Register(
@@ -59,6 +60,7 @@ export class AuthService {
         $confirmPassword: String!
         $email: String!
         $dob: Float!
+        $captcha: String!
       ) {
         register(
           username: $username
@@ -66,6 +68,7 @@ export class AuthService {
           email: $email
           dob: $dob
           confirmPassword: $confirmPassword
+          captcha: $captcha
         )
       }
     `;
@@ -78,6 +81,7 @@ export class AuthService {
         email,
         dob,
         confirmPassword,
+        captcha
       },
     });
   }

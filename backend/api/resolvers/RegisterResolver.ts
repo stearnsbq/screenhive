@@ -5,6 +5,11 @@ import { Service } from 'typedi';
 import { User } from '@generated/type-graphql';
 import jsonwebtoken from 'jsonwebtoken';
 import argon2 from 'argon2'
+import {verify} from 'hcaptcha';
+import { Transporter } from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
+
+
 
 @Service()
 @Resolver()
@@ -39,13 +44,16 @@ export class RegisterResolver {
 		@Arg('confirmPassword') confirmPassword: string,
 		@Arg('email') email: string,
 		@Arg('dob') dob: number,
-		@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient }
+		@Arg('captcha') captcha: string,
+		@Ctx() { res, prisma, mail }: { res: Response; prisma: PrismaClient, mail: Transporter<SMTPTransport.SentMessageInfo> }
 	) {
 		try {
 
-			if(password !== confirmPassword){
+			if(password !== confirmPassword){ // check if the password matches
 				throw new Error('Passwords don\'t match!');
 			}
+
+			await verify(process.env.HCAPTCHA_SECRET as string, captcha) // verify the captcha token
 
 			const newUser = await prisma.user.create({
 				data: {
@@ -66,6 +74,17 @@ export class RegisterResolver {
 			);
 
 			// send verification email here
+
+
+			const emailResult = await mail.sendMail({
+				from: 'no-reply@screenhive.io',
+				to: email,
+				subject: "Please Verify Your Email!",
+				html:""
+			})
+
+
+
 
 
 			return !!newUser;

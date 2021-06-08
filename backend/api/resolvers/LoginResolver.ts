@@ -5,7 +5,7 @@ import { Service } from 'typedi';
 import { Role } from '../enum/Role';
 import { Response } from 'express';
 import { Prisma, PrismaClient, User } from '.prisma/client';
-const {verify} = require('hcaptcha');
+
 
 
 @Service()
@@ -163,21 +163,6 @@ export class LoginResolver {
 		}
 
 	}
-
-	@Query(() => Boolean)
-	async verifyCaptcha(@Arg("token") token: string){
-
-		try{
-
-			const result = await verify(process.env.HCAPTCHA_SECRET, token)
-
-			return true;
-		}catch(err){
-			return false;
-		}
-
-	}
-
 
 
 	@Query(() => Boolean)
