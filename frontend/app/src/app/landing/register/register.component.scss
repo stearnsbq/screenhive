@@ -2,11 +2,6 @@
     color: red;
   }
   
-  
-  
-  
-  
-  
   .logo-box {
     padding: 10%;
     background-color: white;
@@ -34,9 +29,7 @@
       margin: 20px;
     }
   
-  
-  
-  
+
   }
   
   
@@ -79,44 +72,6 @@
   
   
   
-  .login-form-divider {
-    margin-top: 15px;
-    display: flex;
-    font-size: 20px;
-  
-    .divider:first-of-type {
-      margin-left: 8%;
-      margin-right: 5px;
-    }
-  
-    .divider:last-of-type {
-      margin-right: 8%;
-      margin-left: 5px;
-    }
-  }
-  
-  .divider {
-    width: 100%;
-    margin-top: 7px;
-    border: 1px solid rgba(255, 255, 255, 0.31);
-    height: 0px;
-  }
-  
-  .login-form-google-button {
-    border: none;
-    color: white;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    font-size: 16px;
-    width: 85%;
-    background-color: #4ea699;
-    transition: 0.2s;
-  }
-  
-  .login-form-google-button:hover {
-    background-color: #277f72;
-    transition: 0.2s;
-  }
   
   .form-input {
     position: relative;
@@ -148,55 +103,26 @@
   
     button{
       margin: 0 auto;
-    }
-  
-  }
-  
-  
-  
-  
-  
-  .register{
-    .button{
       margin-bottom: 15px;
+      background-color: #ff8200;
+      border: none;
+      border-radius: 5px;
+      width: 125px;
+      padding-top: 8px;
+      font-style: normal;
+      padding-bottom: 8px;
+      font-size: 18px;
+      font-weight: 500;
+      color: white;
     }
+  
   }
   
-  
-  .button {
-    background-color: #ff8200;
-    border: none;
-    border-radius: 5px;
-    width: 125px;
-    padding-top: 8px;
-    font-style: normal;
-    padding-bottom: 8px;
-    font-size: 18px;
-    font-weight: 500;
-    color: white;
-    margin-bottom: 5px;
+
+  .form-errors{
+    color: red;
   }
   
-  .login-form-options{
-    color: #ff8200;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 16px;
-    
-    a{
-      margin: 5px;
-      cursor: pointer;
-    }
-  
-    a:hover{
-      text-decoration: underline;
-    }
-  
-    :last-child{
-      margin-bottom: 15px;
-    }
-  
-  
+  .form-input-invalid{
+    border: 2px solid red !important;
   }

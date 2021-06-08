@@ -6,38 +6,62 @@
 </div>
 
 <div class="form-input">
-    <form [formGroup]="registerGroup" (ngSubmit)="onRegister()">
+    <form [formGroup]="registerGroup" (ngSubmit)="onRegister()" *ngIf="registerGroup.controls as form">
 
         <label for="username">Username</label>
-        <input formControlName="username" type="text">
-        <div *ngIf="submitted && registerGroup.controls.username.errors">
+        <input [ngClass]="{'form-input-invalid': submitted && form.username.errors}" formControlName="username" type="text">
+        <div class="form-errors" *ngIf="submitted && form.username.errors">
             * Username is required!
         </div>
 
         <label for="email">Email</label>
-        <input formControlName="email" type="text">
-        <div *ngIf="submitted && registerGroup.controls.email.errors">
+        <input [ngClass]="{'form-input-invalid': submitted && form.email.errors}" formControlName="email" type="text">
+        <div class="form-errors" *ngIf="submitted && form.email.errors">
             * Email is required!
         </div>
 
         <label for="password">Password</label>
-        <input formControlName="password" type="password">
-        <div *ngIf="submitted && registerGroup.controls.password.errors">
-            * Password is required!
+        <input [ngClass]="{'form-input-invalid': submitted && form.password.errors}" formControlName="password" type="password">
+        <div class="form-errors" *ngIf="submitted && form.password.errors as errors">
+
+            <ng-container *ngIf="errors.required">
+                * Password is Required!
+            </ng-container>
+
+            <ng-container *ngIf="errors.pattern">
+                * Your password must be atleast 8 characters long, contain atleast 1 number, and contain atleast 1 special character (@$!%*#?&)
+            </ng-container>
+
         </div>
 
         <label for="confirmPassword">Confirm Password</label>
-        <input formControlName="confirmPassword" type="password">
-        <div *ngIf="submitted && registerGroup.controls.confirmPassword.errors">
-            * Passwords dont match!
+        <input [ngClass]="{'form-input-invalid': submitted && form.confirmPassword.errors}" formControlName="confirmPassword" type="password">
+        <div class="form-errors" *ngIf="submitted && form.confirmPassword.errors as errors">
+            <ng-container *ngIf="errors.required">
+                * Confirm Password is Required!
+            </ng-container>
+            <ng-container *ngIf="registerGroup.hasError('notSame') && !errors.required">
+                * Passwords don't match!
+            </ng-container>
         </div>
 
         <label for="dob">Date of Birth</label>
-        <input formControlName="dob" type="date">
-        <div *ngIf="submitted && registerGroup.controls.dob.errors">
+        <input [ngClass]="{'form-input-invalid': submitted && form.dob.errors}" formControlName="dob" placeholder="MM/DD/YYYY">
+        <div class="form-errors" *ngIf="submitted && form.dob.errors as errors">
+            <ng-container *ngIf="errors.required">
+                * Date of Birth is Required!
+            </ng-container>
+
+            <ng-container *ngIf="errors.pattern">
+                * Date needs to be in the format MM/DD/YYYY!
+            </ng-container>
 
         </div>
 
-        <button class="button">Register</button>
+        <div class="captcha">
+            <ng-hcaptcha formControlName="captcha"></ng-hcaptcha>
+        </div>
+
+        <button>Register</button>
     </form>
 </div>

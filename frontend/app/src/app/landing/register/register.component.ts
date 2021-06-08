@@ -18,10 +18,11 @@ export class RegisterComponent implements OnInit {
 
     this.registerGroup = this.formBuilder.group({
 			username: [ '', Validators.required ],
-			password: [ '', Validators.pattern('^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$') ], // atleast 8 chars, 1 number, 1 character and one special
-			email: ['', Validators.email],
-			confirmPassword: [''],
-			dob: [new Date(), Validators.required ]
+			password: [ '', [Validators.pattern('^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'), Validators.required]  ], // atleast 8 chars, 1 number, 1 character and one special
+			email: ['', [Validators.required, Validators.email]],
+			confirmPassword: ['', Validators.required],
+			dob: ['', [Validators.required, Validators.pattern('(0[1-9]|1[0-2])\/(0[1-9]|[1-2][0-9]|3[0-1])\/[0-9]{4}')] ], // date format
+			captcha: ['', Validators.required]
 		},{validators: this.checkIfPasswordsMatch});
 
     this.modeChange = new EventEmitter()
@@ -31,10 +32,10 @@ export class RegisterComponent implements OnInit {
   }
 
   private checkIfPasswordsMatch(group: AbstractControl){
-		const password = group.get('password').value;
-		const confirmPassword = group.get('confirmPassword').value;
-	  
-		return password === confirmPassword ? null : { notSame: true } 
+	const password = group.get('password').value;
+	const confirmPassword = group.get('confirmPassword').value;
+  
+	return password === confirmPassword ? null : { notSame: true }     
 	}
 
   public onRegister(){

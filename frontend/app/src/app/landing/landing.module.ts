@@ -6,7 +6,7 @@ import { ForgotPasswordComponent } from './forgot-password/forgot-password.compo
 import { LandingComponent } from './landing.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { LandingRoutingModule } from './landing-routing.module';
-
+import { NgHcaptchaModule } from 'ng-hcaptcha';
 
 
 @NgModule({
@@ -15,7 +15,10 @@ import { LandingRoutingModule } from './landing-routing.module';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    LandingRoutingModule
+    LandingRoutingModule,
+    NgHcaptchaModule.forRoot({
+      siteKey: '07705b25-5cc1-4229-a645-10fd2aaceb01'
+  }),
   ]
 })
 export class LandingModule { }
