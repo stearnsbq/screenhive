@@ -185,6 +185,7 @@ export class LoginResolver {
 						  <p>
 							To Reset Your Password
 							<a href="https://screenhive.io/passwordreset?=${token}">Click Here!</a>
+							Expires in 1hr
 						  </p>
 						  <p>
 							  If that link doesn't work click here: https://screenhive.io/passwordreset?=${token}

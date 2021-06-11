@@ -110,28 +110,12 @@ export class RoomController {
 			if (password) {
 				const hash = await argon2.hash(password);
 
-				const key = pbkdf2Sync(password, randomBytes(16).toString('hex'), 5000, 64, 'sha256').toString('hex');
-
-				await set(roomID, JSON.stringify({ name, isPrivate: true, password: hash, key }));
-
-				socket.join(roomID);
-
-				return socket.emit('room-creation-success', { roomID, key });
+				await set(roomID, JSON.stringify({ name, isPrivate: true, password: hash, users: [] }));
 			}
 
-			const key = pbkdf2Sync(
-				randomBytes(16).toString('hex'),
-				randomBytes(16).toString('hex'),
-				5000,
-				64,
-				'sha256'
-			).toString('hex');
+      socket.join(roomID);
 
-			await set(roomID, JSON.stringify({ name, isPrivate: false, key }));
-
-			socket.join(roomID);
-
-			return socket.emit('room-creation-success', { roomID, key });
+			return socket.emit('room-creation-success', { roomID });
 		} catch (err) {
 			socket.emit('error', { err });
 		}
@@ -219,7 +203,7 @@ export class RoomController {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
-				key: string;
+        users: string[]
 			};
 
 			if (room.isPrivate && !password) {
@@ -234,18 +218,14 @@ export class RoomController {
 
 			socket.join(roomID);
 
-			const message = {
-				username: user.username
-			};
+      room.users.push(user.username)
 
-			const hmac = createHmac('sha256', room.key).update(JSON.stringify(message)).digest('hex');
-
-			socket.to(roomID).emit('user-join-room', { message, mac: btoa(hmac) });
+			socket.to(roomID).emit('user-join-room', {username: user.username});
 
 			socket.emit('room-join-success', {
 				roomID,
 				name: room.name,
-				key: room.key
+        users: room.users
 			});
 
 
