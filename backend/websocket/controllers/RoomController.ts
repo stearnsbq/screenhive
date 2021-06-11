@@ -15,7 +15,7 @@ import { nanoid } from 'nanoid';
 import sanitizeHtml from 'sanitize-html';
 import { RedisClient } from 'redis';
 import { promisify } from 'node:util';
-import { createHmac, pbkdf2Sync, randomBytes } from 'node:crypto';
+import { createHmac, pbkdf2Sync, randomBytes, timingSafeEqual, verify } from 'node:crypto';
 
 export interface Room {
 	id: string;
@@ -263,34 +263,56 @@ export class RoomController {
 	@OnMessage('send-chat')
 	async onSendChat(
 		@ConnectedSocket() socket: any,
-		@MessageBody() { roomID, message }: { roomID: string; message: string }
+		@MessageBody() { message,  hmac }: { message: {roomID: string; text: string}, hmac: string }
 	) {
 		try {
-			await this.roomsMutex.runExclusive(() => {
-				if (!this.rooms.has(roomID)) {
-					return socket.emit('error', { err: 'Room does not exist!' });
-				}
 
-				const user = socket.user;
+      const redis = socket.redis as RedisClient;
 
-				const room = this.rooms.get(roomID) as Room;
 
-				if (!room.users.has(user.username)) {
-					return socket.emit('error', { err: 'User is not in the room!' });
-				}
+      const exists = new Promise((resolve, reject) => {
+				redis.exists(message.roomID, (err, res) => {
+					if (err) {
+						return reject(err);
+					}
 
-				const newMessage = {
-					user: user.username,
-					timestamp: Date.now(),
-					message: sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} })
-				};
-
-				room.messages.push(newMessage);
-
-				room.users.forEach((socket, username) => {
-					socket.emit('chat', newMessage);
+					return resolve(!!res);
 				});
 			});
+
+
+      if(!(await exists)){
+        return socket.emit('error', { err: 'Room does not exist!' });
+      }
+
+      const user = socket.user;
+
+      const get = promisify(redis.get).bind(redis);
+
+      const room = JSON.parse(await get(message.roomID) as string) as {
+				name: string;
+				isPrivate: boolean;
+				password?: string;
+				key: string;
+			};
+
+      const mac = createHmac("sha256", room.key);
+
+      const compute = mac.update(JSON.stringify(message)).digest('hex');
+
+      if(timingSafeEqual(Buffer.from(compute), Buffer.from(atob(hmac)))){
+        return socket.emit('error', { err: 'Invalid HMAC' });
+      }
+
+     	const newMessage = {
+		 		  user: user.username,
+			 		timestamp: Date.now(),
+			 		message: sanitizeHtml(message.text, { allowedTags: [], allowedAttributes: {} })
+			 	};
+
+      const newMessageSig = mac.update(JSON.stringify(newMessage)).digest('hex');
+
+      socket.to(message.roomID).emit("chat", {message: newMessage, hmac: btoa(newMessageSig) })
 
 			socket.emit('chat-sent-success');
 		} catch (err) {
@@ -305,21 +327,24 @@ export class RoomController {
 				return socket.emit('error', { err: 'You are not a streamer!' });
 			}
 
-			this.roomsMutex.runExclusive(() => {
-				if (!this.rooms.has(roomID)) {
-					return socket.emit('error', { err: 'Room does not exist!' });
-				}
+      socket.join("roomID");
 
-				const streamer = socket.streamer;
 
-				const room = this.rooms.get(roomID) as Room;
+			// this.roomsMutex.runExclusive(() => {
+			// 	if (!this.rooms.has(roomID)) {
+			// 		return socket.emit('error', { err: 'Room does not exist!' });
+			// 	}
 
-				room.streamer = { streamer, socket };
+			// 	const streamer = socket.streamer;
 
-				room.users.forEach((socket, username) => {
-					socket.emit('video-offer', { sdp });
-				});
-			});
+			// 	const room = this.rooms.get(roomID) as Room;
+
+			// 	room.streamer = { streamer, socket };
+
+			// 	room.users.forEach((socket, username) => {
+			// 		socket.emit('video-offer', { sdp });
+			// 	});
+			// });
 
 			socket.emit('video-offers-success');
 		} catch (err) {
