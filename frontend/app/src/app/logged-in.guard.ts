@@ -18,13 +18,16 @@ export class LoggedInGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot):  Promise<boolean | UrlTree>  {
 
-  
-      if(await this.auth.isLoggedIn()){
-        this.router.navigate(['/rooms']);
-        return false;
-      }
 
+
+        if(await this.auth.isLoggedIn()){
+          this.router.navigate(['/rooms']);
+          return false;
+        }
+  
+  
       return true;
+
   }
   
 }

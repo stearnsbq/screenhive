@@ -73,17 +73,21 @@ export class RegisterResolver {
 				{ expiresIn: '5hr' }
 			);
 
-			// send verification email here
 
-
-			const emailResult = await mail.sendMail({
-				from: 'no-reply@screenhive.io',
+			await mail.sendMail({
+				from: '"Screenhive No Reply" no-reply@screenhive.io',
 				to: email,
 				subject: "Please Verify Your Email!",
-				html:""
+				html:`
+				      <p>
+						To Verify Your Account 
+						<a href="https://screenhive.io/verify?=${verificationToken}">Click Here!</a>
+					  </p>
+					  <p>
+					  	If that link doesn't work click here: https://screenhive.io/verify?=${verificationToken}
+					  </p>
+				    `
 			})
-
-
 
 
 
