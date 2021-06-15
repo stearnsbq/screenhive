@@ -16,6 +16,7 @@ import sanitizeHtml from 'sanitize-html';
 import { RedisClient } from 'redis';
 import { promisify } from 'node:util';
 import { createHmac, pbkdf2Sync, randomBytes, timingSafeEqual, verify } from 'node:crypto';
+import { RedisService } from '../services/redis';
 
 export interface Room {
 	id: string;
@@ -35,7 +36,7 @@ export class RoomController {
 	private rooms: Map<string, Room>;
 	private roomsMutex: Mutex;
 
-	constructor() {
+	constructor(private redisService: RedisService) {
 		this.rooms = new Map();
 		this.roomsMutex = new Mutex();
 	}
@@ -107,13 +108,9 @@ export class RoomController {
 
 			const set = promisify(socket.redis.set).bind(socket.redis);
 
-			if (password) {
-				const hash = await argon2.hash(password);
+      await set(roomID, JSON.stringify({ name, isPrivate: true, password: isPrivate && password ? await argon2.hash(password): undefined, users: [], streamer: undefined }));
 
-				await set(roomID, JSON.stringify({ name, isPrivate: true, password: hash, users: [] }));
-			}
-
-      socket.join(roomID);
+			socket.join(roomID);
 
 			return socket.emit('room-creation-success', { roomID });
 		} catch (err) {
@@ -183,17 +180,7 @@ export class RoomController {
 
 			const redis = socket.redis as RedisClient;
 
-			const exists = new Promise((resolve, reject) => {
-				redis.exists(roomID, (err, res) => {
-					if (err) {
-						return reject(err);
-					}
-
-					return resolve(!!res);
-				});
-			});
-
-			if (!await exists) {
+			if (!await this.redisService.asyncExists(roomID)) {
 				return socket.emit('error', { err: 'Room Does Not Exist' });
 			}
 
@@ -203,7 +190,8 @@ export class RoomController {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
-        users: string[]
+				users: string[];
+        streamer: string;
 			};
 
 			if (room.isPrivate && !password) {
@@ -218,17 +206,15 @@ export class RoomController {
 
 			socket.join(roomID);
 
-      room.users.push(user.username)
+			room.users.push(user.username);
 
-			socket.to(roomID).emit('user-join-room', {username: user.username});
+			socket.to(roomID).emit('user-join-room', { username: user.username });
 
 			socket.emit('room-join-success', {
 				roomID,
 				name: room.name,
-        users: room.users
+				users: room.users.filter((usr) => usr !== user.username)
 			});
-
-
 		} catch (err) {
 			socket.emit('error', { err });
 		}
@@ -243,56 +229,37 @@ export class RoomController {
 	@OnMessage('send-chat')
 	async onSendChat(
 		@ConnectedSocket() socket: any,
-		@MessageBody() { message,  hmac }: { message: {roomID: string; text: string}, hmac: string }
+		@MessageBody() { roomID, message }: { roomID: string; message: string }
 	) {
 		try {
-
-      const redis = socket.redis as RedisClient;
-
-
-      const exists = new Promise((resolve, reject) => {
-				redis.exists(message.roomID, (err, res) => {
-					if (err) {
-						return reject(err);
-					}
-
-					return resolve(!!res);
-				});
-			});
+			const redis = socket.redis as RedisClient;
 
 
-      if(!(await exists)){
-        return socket.emit('error', { err: 'Room does not exist!' });
-      }
+			if (!await this.redisService.asyncExists(roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
 
-      const user = socket.user;
+			const user = socket.user;
 
-      const get = promisify(redis.get).bind(redis);
+			const get = promisify(redis.get).bind(redis);
 
-      const room = JSON.parse(await get(message.roomID) as string) as {
+			const room = JSON.parse((await get(roomID)) as string) as {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
-				key: string;
+				users: string[];
+       streamer?: string;
 			};
 
-      const mac = createHmac("sha256", room.key);
+			if (!room.users.includes(user.username)) {
+				return socket.emit('error', { err: 'User is not in the room!' });
+			}
 
-      const compute = mac.update(JSON.stringify(message)).digest('hex');
-
-      if(timingSafeEqual(Buffer.from(compute), Buffer.from(atob(hmac)))){
-        return socket.emit('error', { err: 'Invalid HMAC' });
-      }
-
-     	const newMessage = {
-		 		  user: user.username,
-			 		timestamp: Date.now(),
-			 		message: sanitizeHtml(message.text, { allowedTags: [], allowedAttributes: {} })
-			 	};
-
-      const newMessageSig = mac.update(JSON.stringify(newMessage)).digest('hex');
-
-      socket.to(message.roomID).emit("chat", {message: newMessage, hmac: btoa(newMessageSig) })
+			socket.to(roomID).emit('chat', {
+				user: user.username,
+				timestamp: Date.now(),
+				message: sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} })
+			});
 
 			socket.emit('chat-sent-success');
 		} catch (err) {
@@ -301,30 +268,32 @@ export class RoomController {
 	}
 
 	@OnMessage('streamer-join')
-	onStreamerJoin(@ConnectedSocket() socket: any, @MessageBody() { roomID, sdp }: { roomID: string; sdp: string }) {
+	async onStreamerJoin(@ConnectedSocket() socket: any, @MessageBody() { roomID, sdp }: { roomID: string; sdp: string }) {
 		try {
 			if (!socket.streamer) {
 				return socket.emit('error', { err: 'You are not a streamer!' });
 			}
 
-      socket.join("roomID");
+      const{streamer, redis} = socket as {streamer: any, redis: RedisClient};
 
+			if (!await this.redisService.asyncExists(roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
 
-			// this.roomsMutex.runExclusive(() => {
-			// 	if (!this.rooms.has(roomID)) {
-			// 		return socket.emit('error', { err: 'Room does not exist!' });
-			// 	}
+      const room = JSON.parse(await this.redisService.asyncGet(roomID) as string) as {
+				name: string;
+				isPrivate: boolean;
+				password?: string;
+				users: string[];
+        streamer?: string;
+			};
 
-			// 	const streamer = socket.streamer;
+      room.streamer = socket.id;
 
-			// 	const room = this.rooms.get(roomID) as Room;
+      await this.redisService.asyncSet(roomID, JSON.stringify(room))
 
-			// 	room.streamer = { streamer, socket };
+      socket.to(roomID).emit("video-offer", {sdp});
 
-			// 	room.users.forEach((socket, username) => {
-			// 		socket.emit('video-offer', { sdp });
-			// 	});
-			// });
 
 			socket.emit('video-offers-success');
 		} catch (err) {
@@ -333,22 +302,36 @@ export class RoomController {
 	}
 
 	@OnMessage('video-answer')
-	public onVideoAnswer(
+	public async onVideoAnswer(
 		@ConnectedSocket() socket: any,
 		@MessageBody() { roomID, sdp }: { roomID: string; sdp: string }
 	) {
 		try {
-			this.roomsMutex.runExclusive(() => {
-				if (!this.rooms.has(roomID)) {
-					return socket.emit('error', { err: 'Room does not exist!' });
-				}
 
-				const user = socket.user;
+      const user = socket.user;
 
-				const { streamer } = this.rooms.get(roomID) as Room;
 
-				streamer.socket.emit('video-answer', { peer: user.username, sdp });
-			});
+      if(!await this.redisService.asyncExists(roomID)){
+        return socket.emit('error', { err: 'Room does not exist!' });
+      }
+
+
+      const room = JSON.parse(await this.redisService.asyncGet(roomID) as string) as {
+				name: string;
+				isPrivate: boolean;
+				password?: string;
+				users: string[];
+        streamer?: string;
+			};
+
+
+      if(!room.users.includes(user.username)){
+        return socket.emit('error', { err: 'User is not in the room!' });
+      }
+
+
+      socket.to(room.streamer).emit("video-answer", {peer: user.username, sdp})
+
 
 			socket.emit('video-answer-success');
 		} catch (err) {
@@ -365,4 +348,13 @@ export class RoomController {
 	disconnect(@ConnectedSocket() socket: any) {
 		console.log('client disconnected');
 	}
+
+
+
+
+
+
+
+
+
 }

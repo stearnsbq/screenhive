@@ -21,6 +21,7 @@ export class ForgotPasswordComponent implements OnInit {
 
     this.forgotPasswordGroup = this.formBuilder.group({
 			email: [ '', [Validators.email, Validators.required] ],
+			captcha: ['', Validators.required]
 		});
 
 
@@ -31,9 +32,11 @@ export class ForgotPasswordComponent implements OnInit {
 
   public onForgotPassword(){
 		this.submitted = true;
+
+    const {email, captcha} = this.forgotPasswordGroup.controls;
 		
     if(this.forgotPasswordGroup.valid){
-      this.auth.forgotPassword(this.forgotPasswordGroup.controls.email.value).subscribe(({data}) => {
+      this.auth.forgotPassword(email.value, captcha.value).subscribe(({data}) => {
         this.succeded = true;
       },
       (err) => {

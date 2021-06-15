@@ -5,12 +5,11 @@ import jsonwebtoken from 'jsonwebtoken';
 import { config } from 'dotenv';
 import { RedisClient } from 'redis';
 import { createAdapter } from 'socket.io-redis';
+import Container from 'typedi';
+import { RedisService } from './services/redis';
 
 config();
 
-
-const pubClient = new RedisClient({host: process.env.REDIS_BACKEND as string, port: parseInt(process.env.REDIS_PORT as string)})
-const subClient = pubClient.duplicate();
 
 const io = require("socket.io")(3000, {cors:{
     origin: "*"
@@ -19,8 +18,6 @@ const io = require("socket.io")(3000, {cors:{
 
 io.use((socket: any, next: any) => {
 
-    socket.redis = pubClient;
-    
     if(socket.handshake.query && socket.handshake.query.token){
         
         jsonwebtoken.verify(socket.handshake.query.token, process.env.JWT_SECRET as string, (err: any, decoded: any) => {
@@ -35,7 +32,10 @@ io.use((socket: any, next: any) => {
     }
 })
 
-io.adapter(createAdapter({pubClient, subClient}))
+
+const redisService = Container.get(RedisService);
+
+io.adapter(createAdapter({pubClient: redisService.pubClient, subClient: redisService.subClient}))
 
 useSocketServer(io, {controllers: [RoomController]})
 

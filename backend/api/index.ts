@@ -13,9 +13,11 @@ import http from 'http'
 import {Container} from 'typedi';
 import cors from 'cors';
 import csurf from 'csurf';
-const cookieParser = require('cookie-parser');
-const helmet = require("helmet")
 import {createTransport, createTestAccount} from 'nodemailer';
+import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+
 
 
 async function main() {
@@ -28,11 +30,18 @@ async function main() {
 		ignoreMethods: ['GET', 'HEAD', 'OPTIONS'],
 	  });
 
+
+	const rateLimiter = rateLimit({
+		windowMs: 30 * 60 * 1000,
+		max: 100
+	})
+
 	app.use(json());
 	app.use(helmet())
 	app.use(cookieParser());
 	app.use(cors({origin: "*"}))
 	app.use(csrfProtection);
+	app.use(rateLimiter)
 	
 	app.use((req, res, next) => {
 		res.cookie('XSRF-TOKEN', req.csrfToken());
@@ -42,6 +51,8 @@ async function main() {
 	app.get("/csrf", (req, res) => {
 		res.json({})
 	})
+
+	app.set('trust proxy', 1);
 
 
 
