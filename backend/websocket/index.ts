@@ -1,9 +1,8 @@
 import 'reflect-metadata'
-import { useSocketServer } from 'socket-controllers';
+import { useContainer, useSocketServer } from 'socket-controllers';
 import { RoomController } from './controllers/RoomController';
 import jsonwebtoken from 'jsonwebtoken';
 import { config } from 'dotenv';
-import { RedisClient } from 'redis';
 import { createAdapter } from 'socket.io-redis';
 import Container from 'typedi';
 import { RedisService } from './services/redis';
@@ -38,7 +37,7 @@ io.use((socket: any, next: any) => {
 })
 
 
-
+useContainer(Container)
 
 useSocketServer(io, {controllers: [RoomController]})
 

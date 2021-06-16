@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import 'reflect-metadata'
 import {
 	OnConnect,
 	SocketController,
@@ -17,6 +17,7 @@ import { RedisClient } from 'redis';
 import { createHmac, pbkdf2Sync, randomBytes, timingSafeEqual, verify } from 'node:crypto';
 import { RedisService } from '../services/redis';
 import { promisify } from 'util';
+import { Inject, Service } from 'typedi';
 
 export interface Room {
 	id: string;
@@ -31,6 +32,7 @@ export interface Room {
 	timeout?: any;
 }
 
+@Service()
 @SocketController()
 export class RoomController {
 	private rooms: Map<string, Room>;
@@ -48,15 +50,22 @@ export class RoomController {
 		@MessageBody() { roomID }: { roomID: string }
 	) {
 		try {
-			await this.roomsMutex.runExclusive(async () => {
-				if (!this.rooms.has(roomID)) {
-					return socket.emit('error', { err: 'Room does not exist!' });
-				}
 
-				const room = this.rooms.get(roomID) as Room;
+			if (!await this.redisService.asyncHExists("rooms",roomID)) {
+				return socket.emit('error', { err: 'Room Does Not Exist' });
+			}
 
-				socket.emit('is-room-private-success', { isPrivate: room.isPrivate });
-			});
+			const room = JSON.parse((await this.redisService.asyncHGet("rooms", roomID)) as string) as {
+				name: string;
+				isPrivate: boolean;
+				password?: string;
+				users: string[];
+        		streamer: string;
+			};
+
+
+			socket.emit('is-room-private-success', { isPrivate: room.isPrivate });
+
 		} catch (err) {
 			socket.emit('error', { err });
 		}
@@ -69,24 +78,26 @@ export class RoomController {
 		@MessageBody() { page = 1, limit = 16, query = '' }: { page: number; limit: number; query?: string }
 	) {
 		try {
-			await this.roomsMutex.runExclusive(async () => {
-				const rooms = Array.from(this.rooms.values()).filter((room) => {
-					return query.length > 0 ? room.name.includes(query) : true;
-				});
 
+				const rooms = Object.entries(await this.redisService.asyncGetAll("rooms")).map(([id, obj]) => {
+					return {id, ...JSON.parse(obj)}
+				})
+				
 				socket.emit('rooms', {
 					rooms: rooms
+						.filter((room) => query.length > 0 ? room.name.includes(query) : true)
 						.slice((page - 1) * limit, page * limit)
 						.map(({ id, name, users, isPrivate, thumbnail }) => ({
 							id,
 							name,
 							users: isPrivate ? [] : Array.from(users.keys()),
 							isPrivate,
-							thumbnail: isPrivate ? '' : thumbnail
+							thumbnail: (isPrivate ? '' : thumbnail) || ''
 						})),
 					total: rooms.length
 				});
-			});
+
+				
 		} catch (err) {
 			socket.emit('error', { err });
 		}
@@ -106,9 +117,7 @@ export class RoomController {
 				});
 			}
 
-			const set = promisify(socket.redis.set).bind(socket.redis);
-
-      		await set(roomID, JSON.stringify({ name, isPrivate: true, password: isPrivate && password ? await argon2.hash(password): undefined, users: [], streamer: undefined }));
+      		await this.redisService.asyncHSet("rooms", roomID, JSON.stringify({ name, isPrivate, password: isPrivate && password ? await argon2.hash(password): undefined, users: [], thumbnail: '', streamer: undefined }));
 
 			socket.join(roomID);
 
@@ -179,20 +188,16 @@ export class RoomController {
 		try {
 			const user = socket.user;
 
-			const redis = socket.redis as RedisClient;
-
-			if (!await this.redisService.asyncExists(roomID)) {
+			if (!await this.redisService.asyncHExists("rooms", roomID)) {
 				return socket.emit('error', { err: 'Room Does Not Exist' });
 			}
 
-			const get = promisify(redis.get).bind(redis);
-
-			const room = JSON.parse((await get(roomID)) as string) as {
+			const room = JSON.parse((await this.redisService.asyncHGet("rooms", roomID)) as string) as {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
 				users: string[];
-        streamer: string;
+        		streamer: string;
 			};
 
 			if (room.isPrivate && !password) {
@@ -236,20 +241,19 @@ export class RoomController {
 			const redis = socket.redis as RedisClient;
 
 
-			if (!await this.redisService.asyncExists(roomID)) {
+			if (!await this.redisService.asyncHExists("rooms", roomID)) {
 				return socket.emit('error', { err: 'Room does not exist!' });
 			}
 
 			const user = socket.user;
 
-			const get = promisify(redis.get).bind(redis);
 
-			const room = JSON.parse((await get(roomID)) as string) as {
+			const room = JSON.parse((await this.redisService.asyncHGet("rooms", roomID)) as string) as {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
 				users: string[];
-       streamer?: string;
+       			streamer?: string;
 			};
 
 			if (!room.users.includes(user.username)) {
@@ -275,7 +279,7 @@ export class RoomController {
 				return socket.emit('error', { err: 'You are not a streamer!' });
 			}
 
-      const{streamer, redis} = socket as {streamer: any, redis: RedisClient};
+      		const{streamer, redis} = socket as {streamer: any, redis: RedisClient};
 
 			if (!await this.redisService.asyncExists(roomID)) {
 				return socket.emit('error', { err: 'Room does not exist!' });
@@ -286,7 +290,7 @@ export class RoomController {
 				isPrivate: boolean;
 				password?: string;
 				users: string[];
-        streamer?: string;
+        		streamer?: string;
 			};
 
       room.streamer = socket.id;

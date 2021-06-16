@@ -24,6 +24,11 @@ export class RedisService{
     }
 
 
+    public asyncGetAll(hash: string){
+        return promisify(this._pubClient.hgetall).bind(this._pubClient)(hash)
+    }
+
+
     public asyncExists(key: string) {
 		return new Promise((resolve, reject) => {
 			this._pubClient.exists(key, (err, res) => {
@@ -36,12 +41,24 @@ export class RedisService{
 		});
 	}
 
+    public asyncHExists(hash: string, key: string){
+        return promisify(this._pubClient.hexists).bind(this._pubClient)(hash, key)
+    }
+
 	public asyncGet(key: string) {
         return promisify(this._pubClient.get).bind(this._pubClient)(key)
 	}
 
+    public asyncHGet(hash: string, key: string) {
+        return promisify(this._pubClient.hget).bind(this._pubClient)(hash, key)
+	}
+
 	public asyncSet(key: string, value: string) {
         return promisify(this._pubClient.set).bind(this._pubClient)(key, value)
+	}
+
+    public asyncHSet(hash: string, key: string, value: string) {
+        return promisify(this._pubClient.hset).bind(this._pubClient)([hash, key, value])
 	}
 
 }

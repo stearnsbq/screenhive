@@ -78,12 +78,12 @@ export class RoomComponent implements OnInit, OnDestroy {
    public async joinRoom(roomID: string, password?: string){
     this.room = await this.socketService.joinRoom(roomID, password)
 
-    this.room.messages.push({
+    this.room.messages = [{
       type: MessageType.Event,
       user: "You",
       timestamp: Date.now(),
       message: "You joined",
-    });
+    }];
   }
 
   ngOnInit() {
@@ -101,7 +101,6 @@ export class RoomComponent implements OnInit, OnDestroy {
 
 
         if(isPrivate){
-
 
 
           if(this.storage.hasItem("roomPassword")){
