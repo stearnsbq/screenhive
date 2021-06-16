@@ -16,6 +16,11 @@ const io = require("socket.io")(3000, {cors:{
 }});
 
 
+const redisService = Container.get(RedisService);
+
+io.adapter(createAdapter({pubClient: redisService.pubClient, subClient: redisService.subClient}))
+
+
 io.use((socket: any, next: any) => {
 
     if(socket.handshake.query && socket.handshake.query.token){
@@ -33,9 +38,7 @@ io.use((socket: any, next: any) => {
 })
 
 
-const redisService = Container.get(RedisService);
 
-io.adapter(createAdapter({pubClient: redisService.pubClient, subClient: redisService.subClient}))
 
 useSocketServer(io, {controllers: [RoomController]})
 

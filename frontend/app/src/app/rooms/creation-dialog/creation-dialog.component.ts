@@ -67,7 +67,7 @@ export class CreationDialogComponent implements OnInit {
     this.websocketService.createRoom(name, password).then(({roomID}) => {
         this.router.navigate(['/room', roomID], {state: {name, password} })
     }, (err) => {
-        this.logging.error(err);
+        this.logging.error(JSON.stringify(err));
     })
 
   }

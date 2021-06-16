@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Ctx, Arg, Authorized, FieldResolver, Root, ResolverInterface } from 'type-graphql';
+import { Resolver, Query, Mutation, Ctx, Arg, Authorized, FieldResolver, Root, Info, ResolverInterface } from 'type-graphql';
 import { Service } from 'typedi';
 import { User, RevokedToken, Report } from '@generated/type-graphql';
 import { Role } from '../enum/Role';
@@ -153,7 +153,7 @@ export class UserResolver {
 
 	@Authorized()
 	@Query((returns) => User)
-	async user(@Ctx() { user, prisma }: { user: any; prisma: PrismaClient }) {
+	async user(@Ctx() { user, prisma }: { user: any; prisma: PrismaClient }, @Info() info: any) {
 		return await prisma.user.findUnique({
 			where: {
 				id: user.id

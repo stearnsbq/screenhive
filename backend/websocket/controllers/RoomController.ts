@@ -14,9 +14,9 @@ import { Mutex } from 'async-mutex';
 import { nanoid } from 'nanoid';
 import sanitizeHtml from 'sanitize-html';
 import { RedisClient } from 'redis';
-import { promisify } from 'node:util';
 import { createHmac, pbkdf2Sync, randomBytes, timingSafeEqual, verify } from 'node:crypto';
 import { RedisService } from '../services/redis';
+import { promisify } from 'util';
 
 export interface Room {
 	id: string;
@@ -108,12 +108,13 @@ export class RoomController {
 
 			const set = promisify(socket.redis.set).bind(socket.redis);
 
-      await set(roomID, JSON.stringify({ name, isPrivate: true, password: isPrivate && password ? await argon2.hash(password): undefined, users: [], streamer: undefined }));
+      		await set(roomID, JSON.stringify({ name, isPrivate: true, password: isPrivate && password ? await argon2.hash(password): undefined, users: [], streamer: undefined }));
 
 			socket.join(roomID);
 
 			return socket.emit('room-creation-success', { roomID });
 		} catch (err) {
+			console.log(err)
 			socket.emit('error', { err });
 		}
 	}

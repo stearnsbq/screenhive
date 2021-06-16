@@ -1,4 +1,4 @@
-import { promisify } from 'node:util';
+import { promisify } from 'util';
 import { RedisClient } from 'redis';
 import { Container, Service } from 'typedi';
 
