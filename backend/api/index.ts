@@ -41,7 +41,7 @@ async function main() {
 	app.use(cookieParser());
 	app.use(cors({origin: "*"}))
 	app.use(csrfProtection);
-	app.use(rateLimiter)
+	//app.use(rateLimiter)
 	
 	app.use((req, res, next) => {
 		res.cookie('XSRF-TOKEN', req.csrfToken());

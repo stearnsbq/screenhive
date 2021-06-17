@@ -1,4 +1,4 @@
-import 'reflect-metadata'
+import 'reflect-metadata';
 import {
 	OnConnect,
 	SocketController,
@@ -35,13 +35,7 @@ export interface Room {
 @Service()
 @SocketController()
 export class RoomController {
-	private rooms: Map<string, Room>;
-	private roomsMutex: Mutex;
-
-	constructor(private redisService: RedisService) {
-		this.rooms = new Map();
-		this.roomsMutex = new Mutex();
-	}
+	constructor(private redisService: RedisService) {}
 
 	@OnMessage('is-room-private')
 	async onGetRoom(
@@ -50,22 +44,22 @@ export class RoomController {
 		@MessageBody() { roomID }: { roomID: string }
 	) {
 		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
-			if (!await this.redisService.asyncHExists("rooms",roomID)) {
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
 				return socket.emit('error', { err: 'Room Does Not Exist' });
 			}
 
-			const room = JSON.parse((await this.redisService.asyncHGet("rooms", roomID)) as string) as {
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
 				users: string[];
-        		streamer: string;
+				streamer: string;
 			};
 
-
+			await lock.unlock();
 			socket.emit('is-room-private-success', { isPrivate: room.isPrivate });
-
 		} catch (err) {
 			socket.emit('error', { err });
 		}
@@ -78,26 +72,23 @@ export class RoomController {
 		@MessageBody() { page = 1, limit = 16, query = '' }: { page: number; limit: number; query?: string }
 	) {
 		try {
+			const rooms = Object.entries(await this.redisService.asyncGetAll('rooms')).map(([ id, obj ]) => {
+				return { id, ...JSON.parse(obj) };
+			});
 
-				const rooms = Object.entries(await this.redisService.asyncGetAll("rooms")).map(([id, obj]) => {
-					return {id, ...JSON.parse(obj)}
-				})
-				
-				socket.emit('rooms', {
-					rooms: rooms
-						.filter((room) => query.length > 0 ? room.name.includes(query) : true)
-						.slice((page - 1) * limit, page * limit)
-						.map(({ id, name, users, isPrivate, thumbnail }) => ({
-							id,
-							name,
-							users: isPrivate ? [] : Array.from(users.keys()),
-							isPrivate,
-							thumbnail: (isPrivate ? '' : thumbnail) || ''
-						})),
-					total: rooms.length
-				});
-
-				
+			socket.emit('rooms', {
+				rooms: rooms
+					.filter((room) => (query.length > 0 ? room.name.includes(query) : true))
+					.slice((page - 1) * limit, page * limit)
+					.map(({ id, name, users, isPrivate, thumbnail }) => ({
+						id,
+						name,
+						users: isPrivate ? [] : Array.from(users.keys()),
+						isPrivate,
+						thumbnail: (isPrivate ? '' : thumbnail) || ''
+					})),
+				total: rooms.length
+			});
 		} catch (err) {
 			socket.emit('error', { err });
 		}
@@ -117,13 +108,24 @@ export class RoomController {
 				});
 			}
 
-      		await this.redisService.asyncHSet("rooms", roomID, JSON.stringify({ name, isPrivate, password: isPrivate && password ? await argon2.hash(password): undefined, users: [], thumbnail: '', streamer: undefined }));
+			await this.redisService.asyncHSet(
+				'rooms',
+				roomID,
+				JSON.stringify({
+					name,
+					isPrivate,
+					password: isPrivate && password ? await argon2.hash(password) : undefined,
+					users: [],
+					thumbnail: '',
+					streamer: undefined
+				})
+			);
 
 			socket.join(roomID);
 
 			return socket.emit('room-creation-success', { roomID });
 		} catch (err) {
-			console.log(err)
+			console.log(err);
 			socket.emit('error', { err });
 		}
 	}
@@ -131,48 +133,52 @@ export class RoomController {
 	@OnMessage('leave-room')
 	async onLeaveRoom(@ConnectedSocket() socket: any, @MessageBody() { roomID }: { roomID: string }) {
 		try {
-			await this.roomsMutex.runExclusive(async () => {
-				if (!this.rooms.has(roomID)) {
-					return socket.emit('error', { err: 'Room Does Not Exist' });
-				}
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
-				const room = (await this.rooms.get(roomID)) as Room;
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room Does Not Exist' });
+			}
 
-				const { username } = socket.user;
+			const { username } = socket.user;
 
-				if (!room.users.has(username)) {
-					return socket.emit('error', { err: 'User is not in the room!' });
-				}
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as {
+				name: string;
+				isPrivate: boolean;
+				password?: string;
+				users: string[];
+				streamer: string;
+			};
 
-				if (!room.users.delete(username)) {
-					return socket.emit('error', {
-						err: 'Failed to remove user from room!'
-					});
-				}
+			const idx = room.users.indexOf(username);
 
-				room.users.forEach((socket, user) => {
-					socket.emit('user-left-room', { user: username });
-				});
+			if (idx === -1) {
+				return socket.emit('error', { err: 'User is not in the room!' });
+			}
 
-				/*
+			room.users.splice(idx, 1);
 
-			Handling users leaving the room 
+			socket.to(roomID).emit('user-left-room', { user: username });
 
-			Case 1: All users leave the room
-				Result: Set a timer for 10 seconds and if a person joins again stop the timer otherwise just delete the room and notify to shutdown streamer
-			Case 2: A user joins before the timer expires
-				Result: Stop the timer and keep the room open
-			Case 3: Owner closes the room
-				Result: kick everyone out, delete the room and notify the streamer
+			await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
 
-		*/
+			// 	Handling users leaving the room
 
-				if (room.users.size <= 0) {
-					room.timeout = setTimeout(() => {
-						this.rooms.delete(roomID);
-					}, 10000);
-				}
-			});
+			// 	Case 1: All users leave the room
+			// 		Result: Set a timer for 10 seconds and if a person joins again stop the timer otherwise just delete the room and notify to shutdown streamer
+			// 	Case 2: A user joins before the timer expires
+			// 		Result: Stop the timer and keep the room open
+			// 	Case 3: Owner closes the room
+			// 		Result: kick everyone out, delete the room and notify the streamer
+
+			// */
+
+			// 		if (room.users.size <= 0) {
+			// 			room.timeout = setTimeout(() => {
+			// 				this.rooms.delete(roomID);
+			// 			}, 10000);
+			// 		}
+			// 	});
+			await lock.unlock();
 
 			socket.emit('room-left-success', { roomID });
 		} catch (err) {
@@ -188,16 +194,18 @@ export class RoomController {
 		try {
 			const user = socket.user;
 
-			if (!await this.redisService.asyncHExists("rooms", roomID)) {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
 				return socket.emit('error', { err: 'Room Does Not Exist' });
 			}
 
-			const room = JSON.parse((await this.redisService.asyncHGet("rooms", roomID)) as string) as {
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
 				users: string[];
-        		streamer: string;
+				streamer: string;
 			};
 
 			if (room.isPrivate && !password) {
@@ -213,6 +221,10 @@ export class RoomController {
 			socket.join(roomID);
 
 			room.users.push(user.username);
+
+			await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
+
+			await lock.unlock();
 
 			socket.to(roomID).emit('user-join-room', { username: user.username });
 
@@ -238,27 +250,27 @@ export class RoomController {
 		@MessageBody() { roomID, message }: { roomID: string; message: string }
 	) {
 		try {
-			const redis = socket.redis as RedisClient;
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
-
-			if (!await this.redisService.asyncHExists("rooms", roomID)) {
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
 				return socket.emit('error', { err: 'Room does not exist!' });
 			}
 
 			const user = socket.user;
 
-
-			const room = JSON.parse((await this.redisService.asyncHGet("rooms", roomID)) as string) as {
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
 				users: string[];
-       			streamer?: string;
+				streamer?: string;
 			};
 
 			if (!room.users.includes(user.username)) {
 				return socket.emit('error', { err: 'User is not in the room!' });
 			}
+
+			await lock.unlock();
 
 			socket.to(roomID).emit('chat', {
 				user: user.username,
@@ -273,32 +285,36 @@ export class RoomController {
 	}
 
 	@OnMessage('streamer-join')
-	async onStreamerJoin(@ConnectedSocket() socket: any, @MessageBody() { roomID, sdp }: { roomID: string; sdp: string }) {
+	async onStreamerJoin(
+		@ConnectedSocket() socket: any,
+		@MessageBody() { roomID, sdp }: { roomID: string; sdp: string }
+	) {
 		try {
 			if (!socket.streamer) {
 				return socket.emit('error', { err: 'You are not a streamer!' });
 			}
 
-      		const{streamer, redis} = socket as {streamer: any, redis: RedisClient};
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
 			if (!await this.redisService.asyncExists(roomID)) {
 				return socket.emit('error', { err: 'Room does not exist!' });
 			}
 
-      const room = JSON.parse(await this.redisService.asyncGet(roomID) as string) as {
+			const room = JSON.parse((await this.redisService.asyncGet(roomID)) as string) as {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
 				users: string[];
-        		streamer?: string;
+				streamer?: string;
 			};
 
-      room.streamer = socket.id;
+			room.streamer = socket.id;
 
-      await this.redisService.asyncSet(roomID, JSON.stringify(room))
+			await this.redisService.asyncHSet("rooms", roomID, JSON.stringify(room));
 
-      socket.to(roomID).emit("video-offer", {sdp});
+			await lock.unlock();
 
+			socket.to(roomID).emit('video-offer', { sdp });
 
 			socket.emit('video-offers-success');
 		} catch (err) {
@@ -312,31 +328,29 @@ export class RoomController {
 		@MessageBody() { roomID, sdp }: { roomID: string; sdp: string }
 	) {
 		try {
+			const user = socket.user;
 
-      const user = socket.user;
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
+			if (!await this.redisService.asyncHExists("rooms", roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
 
-      if(!await this.redisService.asyncExists(roomID)){
-        return socket.emit('error', { err: 'Room does not exist!' });
-      }
-
-
-      const room = JSON.parse(await this.redisService.asyncGet(roomID) as string) as {
+			const room = JSON.parse((await this.redisService.asyncHGet("rooms", roomID)) as string) as {
 				name: string;
 				isPrivate: boolean;
 				password?: string;
 				users: string[];
-        streamer?: string;
+				streamer?: string;
 			};
 
+			if (!room.users.includes(user.username)) {
+				return socket.emit('error', { err: 'User is not in the room!' });
+			}
 
-      if(!room.users.includes(user.username)){
-        return socket.emit('error', { err: 'User is not in the room!' });
-      }
+			await lock.unlock();
 
-
-      socket.to(room.streamer).emit("video-answer", {peer: user.username, sdp})
-
+			socket.to(room.streamer).emit('video-answer', { peer: user.username, sdp });
 
 			socket.emit('video-answer-success');
 		} catch (err) {
@@ -346,20 +360,11 @@ export class RoomController {
 
 	@OnConnect()
 	connection(@ConnectedSocket() socket: any) {
-		console.log('client connected');
+		console.log('Client Connected');
 	}
 
 	@OnDisconnect()
 	disconnect(@ConnectedSocket() socket: any) {
-		console.log('client disconnected');
+		console.log('Client Disconnected');
 	}
-
-
-
-
-
-
-
-
-
 }

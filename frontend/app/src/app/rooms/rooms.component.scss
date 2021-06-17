@@ -109,6 +109,28 @@
   }
 }
 
+
+.private-room{
+  width: 250px;
+  height: 125px;
+
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
+
+  img{
+    height: 100%;
+    width: 100%;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    
+    
+    background-color: #48484b;
+  }
+
+}
+
+
 .rooms-grid {
   height: 100%;
   display: grid;
@@ -121,10 +143,14 @@
   height: 100%;
   width: 100%;
 
-  img {
+  .thumbnail{
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
+    width: 250px;
+    height: 125px;
   }
+
+
 }
 
 .grid-container {
@@ -135,11 +161,11 @@
 
 .grid-item-footer {
   display: flex;
+  width: 234px;
   flex-direction: row;
   justify-content: space-between;
-  padding: 5px;
-  padding-left: 10px;
-  padding-right: 10px;
+  padding: 8px;
+
   margin-top: -6px;
   border-bottom-left-radius: 3px;
   border-bottom-right-radius: 3px;

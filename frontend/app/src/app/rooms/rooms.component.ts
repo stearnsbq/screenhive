@@ -20,12 +20,14 @@ export class RoomsComponent {
 
   constructor(private websocketService: WebsocketService, private router: Router, private logging: LoggingService, route:ActivatedRoute) { 
     this.page = 1;
+
     route.params.subscribe(val => {
       this.logging.debug("Retrieving Rooms")
       this.websocketService.getRooms(this.page, 16).then(({rooms}) => {
         this.rooms = rooms;
       })
     });
+
   }
 
 

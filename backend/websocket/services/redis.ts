@@ -1,17 +1,25 @@
 import { promisify } from 'util';
 import { RedisClient } from 'redis';
 import { Container, Service } from 'typedi';
+import Redlock from 'redlock';
 
 @Service()
 export class RedisService{
 
     private _pubClient: RedisClient;
     private _subClient: RedisClient;
+    private _lock: Redlock
 
 
     constructor(){
          this._pubClient = new RedisClient({host: process.env.REDIS_BACKEND as string, port: parseInt(process.env.REDIS_PORT as string)})
          this._subClient = this._pubClient.duplicate();
+         this._lock = new Redlock([this._pubClient], 	{
+            driftFactor: 0.01, 
+            retryCount:  10,
+            retryDelay:  200, 
+            retryJitter:  200 
+        })
     }
 
 
@@ -21,6 +29,10 @@ export class RedisService{
 
     get subClient() : RedisClient{
         return this._subClient;
+    }
+
+    lock(resource: string, ttl: number){
+        return this._lock.lock(resource, ttl);
     }
 
 

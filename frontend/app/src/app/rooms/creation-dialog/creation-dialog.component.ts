@@ -3,6 +3,7 @@ import { Component, EventEmitter, HostListener, OnInit, Output } from '@angular/
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LoggingService } from 'src/app/logging.service';
+import { StorageService } from 'src/app/storage.service';
 import { WebsocketService } from 'src/app/websocket.service';
 
 @Component({
@@ -17,7 +18,7 @@ export class CreationDialogComponent implements OnInit {
 
 
 
-  constructor(private formBuilder: FormBuilder, private websocketService: WebsocketService, private router: Router, private logging: LoggingService) { 
+  constructor(private formBuilder: FormBuilder, private websocketService: WebsocketService, private router: Router, private logging: LoggingService, private storage: StorageService) { 
     this.isOpen = false;
     this.isPrivate = false;
     this.creationGroup = this.formBuilder.group({
@@ -65,7 +66,9 @@ export class CreationDialogComponent implements OnInit {
     const password = controls['password'].value;
 
     this.websocketService.createRoom(name, password).then(({roomID}) => {
-        this.router.navigate(['/room', roomID], {state: {name, password} })
+        this.storage.setItem("roomPassword", password)
+
+        this.router.navigate(['/room', roomID])
     }, (err) => {
         this.logging.error(JSON.stringify(err));
     })

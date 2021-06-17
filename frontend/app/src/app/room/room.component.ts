@@ -66,24 +66,28 @@ export class RoomComponent implements OnInit, OnDestroy {
   }
 
 
-  ngOnDestroy(){
+   async ngOnDestroy(){
     if(this.room){
-      this.socketService.leaveRoom(this.roomID).then((val) => {
-        this.logging.debug(`Left Room ${this.room.name} with id ${this.roomID}`)
-        this.storage.removeItem("roomPassword")
-      })
+      await this.socketService.leaveRoom(this.roomID)
+      this.logging.debug(`Left Room ${this.room.name} with id ${this.roomID}`)
+      this.storage.removeItem("roomPassword")
     }
   }
 
    public async joinRoom(roomID: string, password?: string){
-    this.room = await this.socketService.joinRoom(roomID, password)
+    try{
+      this.room = await this.socketService.joinRoom(roomID, password)
 
-    this.room.messages = [{
-      type: MessageType.Event,
-      user: "You",
-      timestamp: Date.now(),
-      message: "You joined",
-    }];
+      this.room.messages = [{
+        type: MessageType.Event,
+        user: "You",
+        timestamp: Date.now(),
+        message: "You joined",
+      }];
+    }catch(err){
+      console.log(err)
+    }
+
   }
 
   ngOnInit() {
