@@ -12,21 +12,27 @@ import { CreationDialogComponent } from './creation-dialog/creation-dialog.compo
   templateUrl: './rooms.component.html',
   styleUrls: ['./rooms.component.scss']
 })
-export class RoomsComponent {
+export class RoomsComponent implements OnInit {
   @ViewChild("grid") grid: ElementRef;
   @ViewChild("creation")  creationDialog: CreationDialogComponent
   public rooms: {id: string, name: string, users: string[], isPrivate: boolean}[]
   public page: number;
+  public total: number;
 
   constructor(private websocketService: WebsocketService, private router: Router, private logging: LoggingService, route:ActivatedRoute) { 
     this.page = 1;
+    this.total = 0;
+  }
 
-    route.params.subscribe(val => {
-      this.logging.debug("Retrieving Rooms")
-      this.websocketService.getRooms(this.page, 16).then(({rooms}) => {
-        this.rooms = rooms;
-      })
-    });
+  ngOnInit(){
+
+    this.logging.debug("Retrieving Rooms")
+    this.websocketService.getRooms(this.page, 16)
+
+    this.websocketService.listenToEvent('rooms').subscribe(({rooms, total}) => {
+      this.rooms = rooms;
+      this.total = total;
+    })
 
   }
 

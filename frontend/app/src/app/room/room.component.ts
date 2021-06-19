@@ -3,6 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  HostListener,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -17,7 +18,8 @@ import { PasswordDialogComponent } from './password-dialog/password-dialog.compo
 
 enum MessageType {
   Chat = 1,
-  Event = 2,
+  UserJoin = 2,
+  UserLeft = 3,
 }
 
 interface Room {
@@ -63,23 +65,47 @@ export class RoomComponent implements OnInit, OnDestroy {
     this.isPasswordDialogOpen = false;
 
 
+
   }
 
 
-   async ngOnDestroy(){
+
+  @HostListener('window:beforeunload', ['$event'])
+  public onBeforeUnload($event) {
+    this.ngOnDestroy()
+  }
+
+  @HostListener('window:unload', ['$event'])
+  public onUnload($event) {
+    this.ngOnDestroy()
+  }
+
+
+  ngOnDestroy(){
     if(this.room){
-      await this.socketService.leaveRoom(this.roomID)
-      this.logging.debug(`Left Room ${this.room.name} with id ${this.roomID}`)
-      this.storage.removeItem("roomPassword")
+      this.socketService.leaveRoom(this.roomID)
+
+      this.socketService.listenToEventOnce('error').then(({error}) => {
+        this.logging.error(JSON.stringify(error))
+      })
+
+      this.socketService.listenToEventOnce('room-left-success').then((evt) => {
+        this.logging.debug(`Left Room ${this.room.name} with id ${this.roomID}`)
+        this.storage.removeItem("roomPassword")
+      })
+
     }
   }
 
    public async joinRoom(roomID: string, password?: string){
     try{
-      this.room = await this.socketService.joinRoom(roomID, password)
+
+      this.socketService.joinRoom(roomID, password)
+
+      this.room = await this.socketService.listenToEventOnce('room-join-success')
 
       this.room.messages = [{
-        type: MessageType.Event,
+        type: MessageType.UserJoin,
         user: "You",
         timestamp: Date.now(),
         message: "You joined",
@@ -92,20 +118,62 @@ export class RoomComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
 
-    this.socketService.getRoomEvents().subscribe((evt) => {
-      console.log(evt)
+
+    this.socketService.listenToEvent('user-left-room').subscribe((evt) => {
+
+      this.logging.info("dome");
+
     })
+
+    this.socketService.listenToEvent('user-join-room').subscribe(({username}) => {
+
+      this.room.messages.push({
+        type: MessageType.UserJoin,
+        user: username,
+        timestamp: Date.now(),
+        message: `${username} joined`,
+      })
+
+
+      if(!this.room.users){
+        this.room.users = [];
+      }
+
+      this.room.users.push(username)
+
+
+    })
+
+    this.socketService.listenToEvent('chat').subscribe(({user, message, timestamp}) => {
+      this.room.messages.push({
+        type: MessageType.Chat,
+        user: user,
+        timestamp,
+        message,
+      })
+    })
+
+    this.socketService.listenToEvent('video-offer').subscribe((evt) => {
+      this.logging.info(JSON.stringify(evt));
+    })
+
+    this.socketService.listenToEvent('chat-sent-success').subscribe((evt) => {
+      this.logging.debug("Chat Successfully Sent!")
+    })
+    
+
 
     this.route.params.subscribe(async ({ id }) => {
       this.roomID = id;
 
       try{
 
-        const {isPrivate} = await this.socketService.isRoomPrivate(this.roomID) as {isPrivate: boolean};
+        this.socketService.isRoomPrivate(this.roomID);
+
+        const {isPrivate} = await this.socketService.listenToEventOnce('is-room-private-success') as {isPrivate: boolean}
 
 
         if(isPrivate){
-
 
           if(this.storage.hasItem("roomPassword")){
             this.joinRoom(this.roomID, this.storage.getItem("roomPassword"))
@@ -143,6 +211,8 @@ export class RoomComponent implements OnInit, OnDestroy {
 
 
     });
+
+
   }
 
   onVolumeChange() {
@@ -167,19 +237,16 @@ export class RoomComponent implements OnInit, OnDestroy {
 
     const escaped = target.value.replace(/\n/ig, '');
 
-    this.socketService
-      .sendChat(this.roomID, escaped)
-      .then((message) => {
-        this.room.messages.push({
-          type: MessageType.Chat,
-          user: username,
-          timestamp: Date.now(),
-          message: escaped,
-        });
-        target.value = '';
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    this.socketService.sendChat(this.roomID, escaped)
+
+    this.room.messages.push({
+      type: MessageType.Chat,
+      user: username,
+      timestamp: Date.now(),
+      message: escaped,
+    });
+
+    target.value = '';
+
   }
 }

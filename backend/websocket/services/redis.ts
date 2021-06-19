@@ -53,6 +53,30 @@ export class RedisService{
 		});
 	}
 
+    public asyncDel(key: string){
+        return new Promise((resolve, reject) => {
+			this._pubClient.del(key, (err, res) => {
+				if (err) {
+					return reject(err);
+				}
+
+				return resolve(!!res);
+			});
+		});
+    }
+
+    public asyncHDel(hash:string, key: string){
+        return new Promise((resolve, reject) => {
+			this._pubClient.hdel(key, hash, (err, res) => {
+				if (err) {
+					return reject(err);
+				}
+
+				return resolve(!!res);
+			});
+		});
+    }
+
     public asyncHExists(hash: string, key: string){
         return promisify(this._pubClient.hexists).bind(this._pubClient)(hash, key)
     }
@@ -72,5 +96,9 @@ export class RedisService{
     public asyncHSet(hash: string, key: string, value: string) {
         return promisify(this._pubClient.hset).bind(this._pubClient)([hash, key, value])
 	}
+
+    public asyncSetEx(key: string, value: string, expiry: number){
+        return promisify(this._pubClient.setex)(key, expiry, value)
+    }
 
 }

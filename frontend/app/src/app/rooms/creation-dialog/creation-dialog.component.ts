@@ -48,6 +48,9 @@ export class CreationDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
+
+
+
   }
 
   @HostListener('document:keydown.escape', ['$event'])
@@ -65,12 +68,16 @@ export class CreationDialogComponent implements OnInit {
     const name = controls['name'].value;
     const password = controls['password'].value;
 
-    this.websocketService.createRoom(name, password).then(({roomID}) => {
-        this.storage.setItem("roomPassword", password)
+    this.websocketService.createRoom(name, password);
 
-        this.router.navigate(['/room', roomID])
-    }, (err) => {
-        this.logging.error(JSON.stringify(err));
+    this.websocketService.listenToEventOnce('room-creation-success').then(({roomID}) => {
+      this.storage.setItem("roomPassword", password)
+
+      this.router.navigate(['/room', roomID])
+    })
+
+    this.websocketService.listenToEventOnce('error').then((err) => {
+      this.logging.error(JSON.stringify(err));
     })
 
   }
