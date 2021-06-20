@@ -194,6 +194,9 @@ export class RoomController {
 
 			socket.join(roomID);
 
+
+			await this.redisService.asyncSet(`${user.username}-room`, roomID) // to speed up when user leaves a room
+
 			room.users.push(user.username);
 
 			await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
@@ -320,7 +323,44 @@ export class RoomController {
 	}
 
 	@OnDisconnect()
-	disconnect(@ConnectedSocket() socket: any) {
+	async disconnect(@ConnectedSocket() socket: any) {
+
+		const {username} = socket.user;
+
+		const key = `${username}-room`;
+
+		if(await this.redisService.asyncExists(key)){
+
+			const roomID = await this.redisService.asyncGet(key) as string
+
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if(await this.redisService.asyncHExists("rooms", roomID as string)){
+
+				const room = JSON.parse(await this.redisService.asyncHGet("rooms", roomID)) as Room
+
+				const idx = room.users.indexOf(username);
+
+				if(idx !== -1){
+
+					room.users.splice(room.users.indexOf(username), 1);
+
+					await this.redisService.asyncHSet("rooms", roomID, JSON.stringify(room));
+	
+					await this.redisService.asyncDel(key)
+	
+					socket.to(roomID).emit('user-left-room', { user: username });
+					
+				}
+
+			}
+
+
+			await lock.unlock();
+
+		}
+		
 		console.log('Client Disconnected');
+
 	}
 }

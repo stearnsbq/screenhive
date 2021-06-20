@@ -41,6 +41,8 @@ export class RedisService{
     }
 
 
+
+
     public asyncExists(key: string) {
 		return new Promise((resolve, reject) => {
 			this._pubClient.exists(key, (err, res) => {

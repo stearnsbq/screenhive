@@ -18,8 +18,9 @@ import { PasswordDialogComponent } from './password-dialog/password-dialog.compo
 
 enum MessageType {
   Chat = 1,
-  UserJoin = 2,
-  UserLeft = 3,
+  YouJoined = 2,
+  UserJoined = 3,
+  UserLeft = 4,
 }
 
 interface Room {
@@ -28,9 +29,9 @@ interface Room {
   password?: string;
   messages?: {
     type: MessageType;
-    user: string;
-    timestamp: number;
-    message: string;
+    user?: string;
+    timestamp?: number;
+    message?: string;
   }[];
 }
 
@@ -48,6 +49,7 @@ export class RoomComponent implements OnInit, OnDestroy {
   public muted: boolean;
   public roomID: string;
   public room: Room;
+  public MessageType = MessageType
 
   public isPasswordDialogOpen: boolean;
 
@@ -59,30 +61,17 @@ export class RoomComponent implements OnInit, OnDestroy {
     private logging: LoggingService,
     private storage: StorageService
   ) {
-    this.chatExpanded = false;
+    this.chatExpanded = true;
     this.muted = false;
     this.playerVolume = 0.0;
     this.isPasswordDialogOpen = false;
-
-
-
-  }
-
-
-
-  @HostListener('window:beforeunload', ['$event'])
-  public onBeforeUnload($event) {
-    this.ngOnDestroy()
-  }
-
-  @HostListener('window:unload', ['$event'])
-  public onUnload($event) {
-    this.ngOnDestroy()
   }
 
 
   ngOnDestroy(){
     if(this.room){
+      this.logging.info(`Trying to Leave Room ${this.roomID}`)
+
       this.socketService.leaveRoom(this.roomID)
 
       this.socketService.listenToEventOnce('error').then(({error}) => {
@@ -105,13 +94,23 @@ export class RoomComponent implements OnInit, OnDestroy {
       this.room = await this.socketService.listenToEventOnce('room-join-success')
 
       this.room.messages = [{
-        type: MessageType.UserJoin,
+        type: MessageType.YouJoined,
         user: "You",
         timestamp: Date.now(),
         message: "You joined",
       }];
+
+      const { username } = this.auth.user();
+
+      this.room.messages.push({
+        type: MessageType.Chat,
+        user: username,
+        timestamp: Date.now(),
+        message: "test123",
+      });
+
     }catch(err){
-      console.log(err)
+      this.logging.error(JSON.stringify(err))
     }
 
   }
@@ -119,19 +118,18 @@ export class RoomComponent implements OnInit, OnDestroy {
   ngOnInit() {
 
 
-    this.socketService.listenToEvent('user-left-room').subscribe((evt) => {
+    this.socketService.listenToEvent('user-left-room').subscribe(({user}) => {
 
-      this.logging.info("dome");
+        this.room.users.splice(this.room.users.indexOf(user), 1);
 
     })
 
     this.socketService.listenToEvent('user-join-room').subscribe(({username}) => {
 
       this.room.messages.push({
-        type: MessageType.UserJoin,
+        type: MessageType.UserJoined,
         user: username,
         timestamp: Date.now(),
-        message: `${username} joined`,
       })
 
 

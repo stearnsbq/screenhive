@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import express, { Router } from 'express';
+import express from 'express';
 import { json } from 'body-parser';
 import { config } from 'dotenv';
 import { buildSchema } from 'type-graphql';
