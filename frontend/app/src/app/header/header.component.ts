@@ -13,12 +13,14 @@ export class HeaderComponent implements OnInit {
   public isMessagesOpen: boolean;
   public isNotificationsOpen: boolean;
   public isUserOpen: boolean;
+  public isHamburgerMenuOpen: boolean;
   public user: any;
 
   constructor(public router: Router, public auth: AuthService) { 
     this.isMessagesOpen = false;
     this.isNotificationsOpen = false;
     this.isUserOpen = false;
+    this.isHamburgerMenuOpen = false;
     this.user = this.auth.user();
   } 
 

@@ -3,6 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  HostListener,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -17,7 +18,9 @@ import { PasswordDialogComponent } from './password-dialog/password-dialog.compo
 
 enum MessageType {
   Chat = 1,
-  Event = 2,
+  YouJoined = 2,
+  UserJoined = 3,
+  UserLeft = 4,
 }
 
 interface Room {
@@ -26,9 +29,9 @@ interface Room {
   password?: string;
   messages?: {
     type: MessageType;
-    user: string;
-    timestamp: number;
-    message: string;
+    user?: string;
+    timestamp?: number;
+    message?: string;
   }[];
 }
 
@@ -46,6 +49,7 @@ export class RoomComponent implements OnInit, OnDestroy {
   public muted: boolean;
   public roomID: string;
   public room: Room;
+  public MessageType = MessageType
 
   public isPasswordDialogOpen: boolean;
 
@@ -57,52 +61,117 @@ export class RoomComponent implements OnInit, OnDestroy {
     private logging: LoggingService,
     private storage: StorageService
   ) {
-    this.chatExpanded = false;
+    this.chatExpanded = true;
     this.muted = false;
     this.playerVolume = 0.0;
     this.isPasswordDialogOpen = false;
-
-
   }
 
 
   ngOnDestroy(){
     if(this.room){
-      this.socketService.leaveRoom(this.roomID).then((val) => {
+      this.logging.info(`Trying to Leave Room ${this.roomID}`)
+
+      this.socketService.leaveRoom(this.roomID)
+
+      this.socketService.listenToEventOnce('error').then(({error}) => {
+        this.logging.error(JSON.stringify(error))
+      })
+
+      this.socketService.listenToEventOnce('room-left-success').then((evt) => {
         this.logging.debug(`Left Room ${this.room.name} with id ${this.roomID}`)
         this.storage.removeItem("roomPassword")
       })
+
     }
   }
 
    public async joinRoom(roomID: string, password?: string){
-    this.room = await this.socketService.joinRoom(roomID, password)
+    try{
 
-    this.room.messages.push({
-      type: MessageType.Event,
-      user: "You",
-      timestamp: Date.now(),
-      message: "You joined",
-    });
+      this.socketService.joinRoom(roomID, password)
+
+      this.room = await this.socketService.listenToEventOnce('room-join-success')
+
+      this.room.messages = [{
+        type: MessageType.YouJoined,
+        user: "You",
+        timestamp: Date.now(),
+        message: "You joined",
+      }];
+
+      const { username } = this.auth.user();
+
+      this.room.messages.push({
+        type: MessageType.Chat,
+        user: username,
+        timestamp: Date.now(),
+        message: "test123",
+      });
+
+    }catch(err){
+      this.logging.error(JSON.stringify(err))
+    }
+
   }
 
   ngOnInit() {
 
-    this.socketService.getRoomEvents().subscribe((evt) => {
-      console.log(evt)
+
+    this.socketService.listenToEvent('user-left-room').subscribe(({user}) => {
+
+        this.room.users.splice(this.room.users.indexOf(user), 1);
+
     })
+
+    this.socketService.listenToEvent('user-join-room').subscribe(({username}) => {
+
+      this.room.messages.push({
+        type: MessageType.UserJoined,
+        user: username,
+        timestamp: Date.now(),
+      })
+
+
+      if(!this.room.users){
+        this.room.users = [];
+      }
+
+      this.room.users.push(username)
+
+
+    })
+
+    this.socketService.listenToEvent('chat').subscribe(({user, message, timestamp}) => {
+      this.room.messages.push({
+        type: MessageType.Chat,
+        user: user,
+        timestamp,
+        message,
+      })
+    })
+
+    this.socketService.listenToEvent('video-offer').subscribe((evt) => {
+      this.logging.info(JSON.stringify(evt));
+    })
+
+    this.socketService.listenToEvent('chat-sent-success').subscribe((evt) => {
+      this.logging.debug("Chat Successfully Sent!")
+    })
+    
+
 
     this.route.params.subscribe(async ({ id }) => {
       this.roomID = id;
 
       try{
 
-        const {isPrivate} = await this.socketService.isRoomPrivate(this.roomID) as {isPrivate: boolean};
+        this.socketService.isRoomPrivate(this.roomID);
+
+        const {isPrivate} = await this.socketService.listenToEventOnce('is-room-private-success') as {isPrivate: boolean}
 
 
         if(isPrivate){
-
-
 
           if(this.storage.hasItem("roomPassword")){
             this.joinRoom(this.roomID, this.storage.getItem("roomPassword"))
@@ -140,6 +209,8 @@ export class RoomComponent implements OnInit, OnDestroy {
 
 
     });
+
+
   }
 
   onVolumeChange() {
@@ -164,19 +235,16 @@ export class RoomComponent implements OnInit, OnDestroy {
 
     const escaped = target.value.replace(/\n/ig, '');
 
-    this.socketService
-      .sendChat(this.roomID, escaped)
-      .then((message) => {
-        this.room.messages.push({
-          type: MessageType.Chat,
-          user: username,
-          timestamp: Date.now(),
-          message: escaped,
-        });
-        target.value = '';
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    this.socketService.sendChat(this.roomID, escaped)
+
+    this.room.messages.push({
+      type: MessageType.Chat,
+      user: username,
+      timestamp: Date.now(),
+      message: escaped,
+    });
+
+    target.value = '';
+
   }
 }

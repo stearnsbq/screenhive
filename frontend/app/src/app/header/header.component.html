@@ -7,9 +7,11 @@
   </div>
 
 
-  <div class="hamburger">
+  <div class="hamburger" (click)="isHamburgerMenuOpen = !isHamburgerMenuOpen">
     <img src="/assets/icons/menu.svg" />
   </div>
+
+
 
 
   <div class="small-spacer"></div>
@@ -60,7 +62,7 @@
         <span></span>
       </div>
       <div body>
-       <ul>
+       <ul class="list">
          <li (click)="profile.open()">Profile</li>
          <li>Help & Feedback</li>
          <li (click)="auth.logout()">Logout</li>
@@ -71,7 +73,22 @@
   </div>
 
 
+
+
+
 </div>
+
+
+<div *ngIf="isHamburgerMenuOpen" class="hamburger-menu">
+  <ul class="list">
+    <li>Messages</li>
+    <li>Notifcations</li>
+    <li>Profile</li>
+    <li>Help & Feedback</li>
+    <li>Logout</li>
+  </ul>
+</div>
+
 
 
 <app-profile-dialog #profile></app-profile-dialog>

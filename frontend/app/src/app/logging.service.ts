@@ -20,6 +20,10 @@ export class LoggingService {
     console.error(...this.format(message))
   }
 
+  public info(message){
+    console.info(...this.format(message))
+  }
+
 
 
 }

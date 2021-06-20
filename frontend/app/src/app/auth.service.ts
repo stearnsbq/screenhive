@@ -148,18 +148,19 @@ export class AuthService {
   }
 
 
-  public forgotPassword(email: string){
+  public forgotPassword(email: string, captcha: string){
 
     const query = gql`
-    query resetPasswordRequest($email: String!){
-      resetPasswordRequest(email: $email)
+    query resetPasswordRequest($email: String!, $captcha: String!){
+      resetPasswordRequest(email: $email, captcha: $captcha)
     }
     `
 
     return this.apollo.query({
       query,
       variables:{
-        email
+        email,
+        captcha
       }
     })
 
