@@ -24,7 +24,7 @@ export interface Room {
 }
 
 @Service()
-@SocketController()
+@SocketController("rooms")
 export class RoomController {
 	constructor(private redisService: RedisService) {}
 
@@ -137,6 +137,8 @@ export class RoomController {
 			room.users.splice(idx, 1);
 
 			socket.to(roomID).emit('user-left-room', { user: username });
+
+			await this.redisService.asyncDel(`${username}-room`) 
 
 			await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
 
@@ -255,67 +257,6 @@ export class RoomController {
 		}
 	}
 
-	@OnMessage('streamer-join')
-	async onStreamerJoin(
-		@ConnectedSocket() socket: any,
-		@MessageBody() { roomID, sdp }: { roomID: string; sdp: string }
-	) {
-		try {
-			if (!socket.streamer) {
-				return socket.emit('error', { err: 'You are not a streamer!' });
-			}
-
-			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
-
-			if (!await this.redisService.asyncExists(roomID)) {
-				return socket.emit('error', { err: 'Room does not exist!' });
-			}
-
-			const room = JSON.parse((await this.redisService.asyncGet(roomID)) as string) as Room
-
-			room.streamer = socket.id;
-
-			await this.redisService.asyncHSet("rooms", roomID, JSON.stringify(room));
-
-			await lock.unlock();
-
-			socket.to(roomID).emit('video-offer', { sdp });
-
-			socket.emit('video-offers-success');
-		} catch (err) {
-			socket.emit('error', { err });
-		}
-	}
-
-	@OnMessage('video-answer')
-	public async onVideoAnswer(
-		@ConnectedSocket() socket: any,
-		@MessageBody() { roomID, sdp }: { roomID: string; sdp: string }
-	) {
-		try {
-			const user = socket.user;
-
-			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
-
-			if (!await this.redisService.asyncHExists("rooms", roomID)) {
-				return socket.emit('error', { err: 'Room does not exist!' });
-			}
-
-			const room = JSON.parse((await this.redisService.asyncHGet("rooms", roomID)) as string) as Room
-
-			if (!room.users.includes(user.username)) {
-				return socket.emit('error', { err: 'User is not in the room!' });
-			}
-
-			await lock.unlock();
-
-			socket.to(room.streamer).emit('video-answer', { peer: user.username, sdp });
-
-			socket.emit('video-answer-success');
-		} catch (err) {
-			socket.emit('error', { err });
-		}
-	}
 
 	@OnConnect()
 	connection(@ConnectedSocket() socket: any) {
