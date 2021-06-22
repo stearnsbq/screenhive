@@ -56,5 +56,14 @@ export class SioService{
     }
 
 
+    public to(roomID: string){
+        return this._io.to(roomID);
+    }
+
+    public of(namespace: string){
+        return this._io.of(namespace)
+    }
+
+
 
 }
