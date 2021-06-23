@@ -5,7 +5,6 @@ import { RoomController } from './controllers/RoomController';
 import { config } from 'dotenv';
 import { createAdapter } from 'socket.io-redis';
 import Container from 'typedi';
-import { RedisService } from './services/redis';
 import { SioService } from './services/sio';
 
 config();

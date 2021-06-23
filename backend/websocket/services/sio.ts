@@ -1,5 +1,4 @@
 import { Service } from "typedi";
-import { RedisService } from "./redis";
 import jsonwebtoken, { decode } from 'jsonwebtoken';
 import { createAdapter } from "socket.io-redis";
 import * as io from "socket.io"
@@ -9,15 +8,11 @@ export class SioService{
 
     private _io: io.Server;
 
-    constructor(private redisService: RedisService){
+    constructor(){
 
         this._io = new io.Server(3000, {cors:{
             origin: "*"
         }});
-
-
-        this._io.adapter(createAdapter({pubClient: redisService.pubClient, subClient: redisService.subClient}))
-
 
         this._io.use((socket: any, next: any) => {
 
@@ -43,9 +38,6 @@ export class SioService{
                 socket.disconnect();
             }
         })
-
-
-
 
 
     }
