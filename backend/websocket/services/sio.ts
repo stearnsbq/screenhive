@@ -1,6 +1,6 @@
 import { Service } from "typedi";
 import jsonwebtoken, { decode } from 'jsonwebtoken';
-import { createAdapter } from '@socket.io/redis-adapter';
+import { createAdapter } from 'socket.io-redis';
 import * as io from "socket.io"
 import { RedisService } from "./redis";
 
@@ -17,7 +17,7 @@ export class SioService{
         }});
 
 
-        this._io.adapter(createAdapter(this.redisService.pubClient, this.redisService.subClient))
+        this._io.adapter(createAdapter({pubClient: this.redisService.pubClient, subClient: this.redisService.subClient}))
 
         this._io.use((socket: any, next: any) => {
 

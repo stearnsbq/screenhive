@@ -19,72 +19,81 @@ try{
 
     goSocketServer.on("connection", (socket) =>{
 
-        const getData = () => new Promise((resolve, reject) => {
-
-            socket.on("data", (data) => {
-                resolve(data.toString())
-            })
-
-            socket.on("error", (err) => {
-                reject(err)
-            })
-
-        }).finally(() => {
-            socket.removeListener("data", () => {})
-            socket.removeListener("error", () => {})
-        }) 
-    
         console.log("Go streamer connected!")
     
         const ws = io(process.env.WS_SERVER as string, {query:{
             token: process.env.STREAMER_TOKEN || ""
         }})
+
+
+        socket.on("data", ({event, data}: {event: string, data: any}) => {
+           data = JSON.parse(data.toString())
+
+
+           switch(event){
+            case "video-offer":{
+                ws.emit("video-offer", {roomID, sdp: data.sdp})
+                break;
+            }
+            case "streamer-ice-candidate":{
+                ws.emit("streamer-ice-candidate", {roomID, peer: data.peer, sdp: data.sdp})
+                break;
+            }
+           }
+
+        })
+
+        socket.on("error", (err) => {
+            
+        })
     
     
         ws.on("connect_error", (err) => {
             console.log(err)
         })
     
-    
-            
+
         ws.on("connect", async () => {
     
             console.log("Connected to websocket server!")
     
-            socket.write(JSON.stringify({event: "start-webrtc"}) + "\n")
 
-            const sdp = await getData() as string
-    
-            ws.emit("video-offer", {roomID, sdp})
+            ws.emit("streamer-join", {roomID})
     
         })
     
 
+        ws.on("streamer-join-success", async ({users}) => {
 
+            console.log(users)
 
-        ws.on("streamer-join-success", async () => {
+            socket.write(JSON.stringify({event: "start-webrtc", data: {users}}) + "\n")
 
+        })
 
-            socket.write(JSON.stringify({event: "start-webrtc"}) + "\n")
+        ws.on("user-join-room", async ({username}) => {
 
-            const sdp = JSON.parse(await getData() as string)
+            socket.write(JSON.stringify({event: "get-video-offer", data: {username}}) + "\n")
+
+            const sdp = await getData() as string
 
             ws.emit("video-offer", {roomID, sdp})
-            
+
         })
     
     
         ws.on("video-answer", ({peer, sdp}) => {
-            socket.write(JSON.stringify({event: "video-answer", peer, sdp}));
+            socket.write(JSON.stringify({event: "video-answer", data: {peer, sdp}}) + "\n");
         })
     
-        ws.on("ice-candidate", ({peer, candidate}) => {
-            socket.write(JSON.stringify({event: "ice-candidate", peer, candidate}));
+        ws.on("user-ice-candidate", ({peer, candidate}) => {
+            console.log(peer, candidate)
+            socket.write(JSON.stringify({event: "user-ice-candidate", data: {peer, candidate}}) + "\n");
         })
     
     
         ws.on("error", ({data}) => {
-    
+            console.log(data)
         })
 
    

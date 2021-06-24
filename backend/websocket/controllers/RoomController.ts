@@ -41,7 +41,7 @@ export class RoomController {
 				return socket.emit('error', { err: 'Room Does Not Exist' });
 			}
 
-			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
 
 			await lock.unlock();
 			socket.emit('is-room-private-success', { isPrivate: room.isPrivate });
@@ -126,7 +126,7 @@ export class RoomController {
 
 			const { username } = socket.user;
 
-			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
 
 			const idx = room.users.indexOf(username);
 
@@ -138,63 +138,56 @@ export class RoomController {
 
 			socket.to(roomID).emit('user-left-room', { user: username });
 
-			await this.redisService.asyncDel(`${username}-room`) 
+			await this.redisService.asyncDel(`${username}-room`);
 
 			await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
 
 			if (room.users.length <= 0) {
-				await this.redisService.asyncSetEx(`rooms:${roomID}-expiry`, roomID, 10)
+				await this.redisService.asyncSetEx(`rooms:${roomID}-expiry`, roomID, 10);
 
 				const roomRemove = setInterval(async () => {
-
-					if(!await this.redisService.asyncExists(`rooms:${roomID}-expiry`)){
-						await this.redisService.asyncHDel("rooms", roomID);
-						clearInterval(roomRemove)
+					if (!await this.redisService.asyncExists(`rooms:${roomID}-expiry`)) {
+						await this.redisService.asyncHDel('rooms', roomID);
+						clearInterval(roomRemove);
 					}
-
-				}, 10000)
+				}, 10000);
 			}
 
 			await lock.unlock();
 
 			socket.emit('room-left-success', { roomID });
 		} catch (err) {
-			console.log(err)
+			console.log(err);
 			socket.emit('error', { err });
 		}
 	}
 
+	@OnMessage('streamer-join')
+	async onStreamerJoin(@ConnectedSocket() socket: any, @MessageBody() { streamer, roomID }: any) {
+		if (!socket.streamer || (socket.streamer && socket.streamer.roomID !== roomID)) {
+			socket.emit('error', { err: 'Unauthorized' });
+		}
 
-  @OnMessage('streamer-join')
-  async onStreamerJoin(@ConnectedSocket() socket: any, @MessageBody() {streamer, roomID} : any){
-    if(!socket.streamer || (socket.streamer && socket.streamer.roomID !== roomID) ){
-      socket.emit("error", {err: "Unauthorized"})
-    }
+		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
-    try{
-
-      const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
-
-      if (!await this.redisService.asyncHExists('rooms', roomID)) {
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
 				return socket.emit('error', { err: 'Room Does Not Exist' });
 			}
 
-      const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
 
+			room.streamer = socket.id;
 
-      room.streamer = socket.id;
+			await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
 
-      await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
+			await lock.unlock();
 
-      await lock.unlock();
-
-      socket.emit("streamer-join-success");
-
-    }catch(err){
-      socket.emit("error", {err})
-    }
-
-  }
+			socket.emit('streamer-join-success', { users: room.users });
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
 
 	@OnMessage('join-room')
 	async onJoinRoom(
@@ -210,11 +203,11 @@ export class RoomController {
 				return socket.emit('error', { err: 'Room Does Not Exist' });
 			}
 
-			if(await this.redisService.asyncExists(`rooms:${roomID}-expiry`)){
+			if (await this.redisService.asyncExists(`rooms:${roomID}-expiry`)) {
 				await this.redisService.asyncSet(`rooms:${roomID}-expiry`, roomID);
 			}
 
-			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
 
 			if (room.isPrivate && !password) {
 				return socket.emit('error', {
@@ -228,8 +221,7 @@ export class RoomController {
 
 			socket.join(roomID);
 
-
-			await this.redisService.asyncSet(`${user.username}-room`, roomID) // to speed up when user leaves a room
+			await this.redisService.asyncSet(`${user.username}-room`, roomID); // to speed up when user leaves a room
 
 			room.users.push(user.username);
 
@@ -269,7 +261,7 @@ export class RoomController {
 
 			const user = socket.user;
 
-			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
 
 			if (!room.users.includes(user.username)) {
 				return socket.emit('error', { err: 'User is not in the room!' });
@@ -289,24 +281,91 @@ export class RoomController {
 		}
 	}
 
+	@OnMessage('video-offer')
+	async onVideoOffer(@ConnectedSocket() socket: any, @MessageBody() { roomID, sdp }: any) {
+		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
-	@OnMessage("video-offer")
-	async onVideoOffer(@ConnectedSocket() socket: any, @MessageBody() {roomID, sdp}: any){
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
 
-		try{
+			socket.to(roomID).emit('video-offer', { sdp });
 
-			console.log(roomID, sdp)
-
-			socket.to(roomID).emit("video-offer", {sdp})
-
-		}catch(err){
-
-			console.log(err)
-
+			await lock.unlock();
+		} catch (err) {
+			socket.emit('error', { err });
 		}
-
 	}
 
+	@OnMessage('video-answer')
+	async onVideoAnswer(@ConnectedSocket() socket: any, @MessageBody() { roomID, sdp }: any) {
+		try {
+			const { username } = socket.user;
+
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
+
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
+
+			if (!room.users.includes(username)) {
+				return socket.emit('error', { err: 'User is not in the room!' });
+			}
+
+			socket.to(room.streamer).emit('video-answer', { peer: username, sdp });
+
+			await lock.unlock();
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
+
+	@OnMessage('user-ice-candidate')
+	async onUserIceCandidate(@ConnectedSocket() socket: any, @MessageBody() { roomID, candidate }: any) {
+		try {
+			const { username } = socket.user;
+
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
+
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
+
+			if (!room.users.includes(username)) {
+				return socket.emit('error', { err: 'User is not in the room!' });
+			}
+
+			console.log(room.streamer);
+
+			socket.to(room.streamer).emit('user-ice-candidate', { peer: username, candidate });
+
+			await lock.unlock();
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
+
+	@OnMessage('streamer-ice-candidate')
+	async onStreamerIceCandidate(@ConnectedSocket() socket: any, @MessageBody() { roomID, candidate }: any) {
+		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
+
+			socket.to(roomID).emit('streamer-ice-candidate', { candidate });
+
+			await lock.unlock();
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
 
 	@OnConnect()
 	connection(@ConnectedSocket() socket: any) {
@@ -315,43 +374,36 @@ export class RoomController {
 
 	@OnDisconnect()
 	async disconnect(@ConnectedSocket() socket: any) {
+		if (socket.user) {
+			const { username } = socket.user;
 
-		const {username} = socket.user;
+			const key = `${username}-room`;
 
-		const key = `${username}-room`;
+			if (await this.redisService.asyncExists(key)) {
+				const roomID = (await this.redisService.asyncGet(key)) as string;
 
-		if(await this.redisService.asyncExists(key)){
+				const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
-			const roomID = await this.redisService.asyncGet(key) as string
+				if (await this.redisService.asyncHExists('rooms', roomID as string)) {
+					const room = JSON.parse(await this.redisService.asyncHGet('rooms', roomID)) as Room;
 
-			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+					const idx = room.users.indexOf(username);
 
-			if(await this.redisService.asyncHExists("rooms", roomID as string)){
+					if (idx !== -1) {
+						room.users.splice(room.users.indexOf(username), 1);
 
-				const room = JSON.parse(await this.redisService.asyncHGet("rooms", roomID)) as Room
+						await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
 
-				const idx = room.users.indexOf(username);
+						await this.redisService.asyncDel(key);
 
-				if(idx !== -1){
-
-					room.users.splice(room.users.indexOf(username), 1);
-
-					await this.redisService.asyncHSet("rooms", roomID, JSON.stringify(room));
-	
-					await this.redisService.asyncDel(key)
-	
-					socket.to(roomID).emit('user-left-room', { user: username });
-					
+						socket.to(roomID).emit('user-left-room', { user: username });
+					}
 				}
 
+				await lock.unlock();
 			}
-
-
-			await lock.unlock();
-
 		}
-		
-		console.log('Client Disconnected');
 
+		console.log('Client Disconnected');
 	}
 }

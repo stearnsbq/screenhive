@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 import { AuthService } from '../auth.service';
 import { LoggingService } from '../logging.service';
 import { StorageService } from '../storage.service';
@@ -50,8 +51,10 @@ export class RoomComponent implements OnInit, OnDestroy {
   public roomID: string;
   public room: Room;
   public MessageType = MessageType
-
   public isPasswordDialogOpen: boolean;
+
+
+  public peerConnection: RTCPeerConnection
 
   constructor(
     private auth: AuthService,
@@ -86,6 +89,7 @@ export class RoomComponent implements OnInit, OnDestroy {
     }
   }
 
+
    public async joinRoom(roomID: string, password?: string){
     try{
 
@@ -114,6 +118,9 @@ export class RoomComponent implements OnInit, OnDestroy {
     }
 
   }
+
+
+
 
   ngOnInit() {
 
@@ -151,8 +158,61 @@ export class RoomComponent implements OnInit, OnDestroy {
       })
     })
 
-    this.socketService.listenToEvent('video-offer').subscribe((evt) => {
-      this.logging.info(JSON.stringify(evt));
+    this.socketService.listenToEvent('video-offer').subscribe(async ({sdp}) => {
+
+      const config = {
+        iceServers: [{ urls: environment.ice_server }]
+      };
+
+
+      this.peerConnection = new RTCPeerConnection(config);
+
+      const desc = new RTCSessionDescription(JSON.parse(sdp))
+
+      this.logging.info(JSON.stringify(desc))
+
+      this.peerConnection.setRemoteDescription(desc);
+
+
+      this.peerConnection.addEventListener("icecandidate", ({candidate}) => {
+
+        this.logging.info("Sending Ice candidate")
+
+        this.socketService.iceCandidate(this.auth.user().username, this.roomID, candidate)
+
+      })
+
+
+      const answer = await this.peerConnection.createAnswer()
+
+      await this.peerConnection.setLocalDescription(answer)
+
+      this.peerConnection.ontrack = ({streams}) => {
+        this.logging.info("Got Track")
+        this.player.nativeElement.srcObject = streams[0]
+      }
+
+
+      this.socketService.videoAnswer(this.auth.user().username, this.peerConnection.localDescription)
+
+
+    })
+
+
+    this.socketService.listenToEvent("streamer-ice-candidate").subscribe(async ({candidate}) => {
+
+      try{
+        const iceCandidate = new RTCIceCandidate(candidate);
+
+
+        await this.peerConnection.addIceCandidate(iceCandidate)
+      }catch(err){
+        this.logging.error(`Failed to add ice candidate! ${err}`)
+      }
+
+
+
+
     })
 
     this.socketService.listenToEvent('chat-sent-success').subscribe((evt) => {

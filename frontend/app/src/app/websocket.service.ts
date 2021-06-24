@@ -22,6 +22,14 @@ export class WebsocketService {
 		this.logging.error(err);
 	}
 
+	public async videoAnswer(peer:string, sdp: any){
+		this.socket.emit('video-answer', {peer, sdp});
+	}
+
+	public async iceCandidate(peer:string, roomID: string, candidate: any){
+		this.socket.emit('user-ice-candidate', {peer, roomID, candidate});
+	}
+
 
 	public getRooms(page?: number, limit?: number, search?: string) {
 		this.socket.emit('get-rooms', { page, limit, search });
