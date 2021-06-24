@@ -24,7 +24,7 @@ export interface Room {
 }
 
 @Service()
-@SocketController("rooms")
+@SocketController()
 export class RoomController {
 	constructor(private redisService: RedisService) {}
 
@@ -287,6 +287,24 @@ export class RoomController {
 		} catch (err) {
 			socket.emit('error', { err });
 		}
+	}
+
+
+	@OnMessage("video-offer")
+	async onVideoOffer(@ConnectedSocket() socket: any, @MessageBody() {roomID, sdp}: any){
+
+		try{
+
+			console.log(roomID, sdp)
+
+			socket.to(roomID).emit("video-offer", {sdp})
+
+		}catch(err){
+
+			console.log(err)
+
+		}
+
 	}
 
 

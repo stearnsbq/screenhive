@@ -12,6 +12,8 @@ try{
 
     const {roomID} = jwt.decode(process.env.STREAMER_TOKEN as string) as any;
 
+    console.log(roomID)
+
 
 
 
@@ -55,7 +57,6 @@ try{
     
             ws.emit("video-offer", {roomID, sdp})
     
-            
         })
     
 
