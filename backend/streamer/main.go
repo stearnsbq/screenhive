@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
 
 	"net"
 
@@ -15,7 +17,7 @@ import (
 
 type event struct{
 	Event string  `json:"event"`
-	Data map[string]interface{}
+	Data map[string]interface{} `json:"data"`
 }
 
 
@@ -26,7 +28,9 @@ var peers = make(map[string]webrtc.PeerConnection)
 
 func main() {
 
-	gst_video_pipline_str := "videotestsrc"
+	var socketMutex = &sync.Mutex{}
+
+	gst_video_pipline_str := "autovideosrc ! video/x-raw, width=320, height=240 ! videoconvert ! queue"
 	gst_audio_pipline_str := "audiotestsrc"
 
 	conn, err := net.Dial("tcp", "127.0.0.1:9000")
@@ -45,20 +49,17 @@ func main() {
 		},
 	}
 
-
 	opusTrack, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "audio/opus"}, "audio", "pion1")
 
 	if err != nil {
 		panic(err)
 	} 
 
-
 	vp8Track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/vp8"}, "video", "pion2")
 
 	if err != nil {
 		panic(err)
 	} 
-
 
 	gst.CreatePipeline("opus", []*webrtc.TrackLocalStaticSample{opusTrack}, gst_audio_pipline_str).Start()
 	gst.CreatePipeline("vp8", []*webrtc.TrackLocalStaticSample{vp8Track}, gst_video_pipline_str).Start()
@@ -67,15 +68,13 @@ func main() {
 
 		peerConnection, err := webrtc.NewPeerConnection(config)
 
+		if err != nil {
+			panic(err)
+		}
 
 		peerConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
 			fmt.Printf("Connection State has changed %s \n", connectionState.String())
 		})
-
-
-		if err != nil {
-			panic(err)
-		}
 
 		if _, err = peerConnection.AddTrack(opusTrack); err != nil {
 			panic(err)
@@ -84,8 +83,7 @@ func main() {
 		if _, err = peerConnection.AddTrack(vp8Track); err != nil {
 			panic(err)
 		}
-
-
+		
 		offer, err := peerConnection.CreateOffer(nil)
 
 		if err != nil {
@@ -96,17 +94,12 @@ func main() {
 			panic(err)
 		}
 
-		
-
-
 		return peerConnection
-
 	}
-
-
 
 	for { 
 	  message, _ := bufio.NewReader(conn).ReadString('\n')
+
 	  
 	  var res event
 
@@ -118,55 +111,68 @@ func main() {
 	  }
 
 
-
 	  switch res.Event{
 		case "start-webrtc": {
 
-			var offerSDP []byte
+			video_offer := event{}
 
-			for _, user := range res.Data["users"].([]interface{}){
+			dataMap := make(map[string]interface{})
 
-				fmt.Println(user)
+			video_offer.Event = "video-offer"
+
+			for _, user := range res.Data["peers"].([]interface{}){
 
 				peerConnection := createPeerConnection()
 
-				if(len(offerSDP) <= 0){
-					offerSDP, _ = json.Marshal(peerConnection.LocalDescription())
-				}
-
-				
-
 				peerConnection.OnICECandidate(func(i *webrtc.ICECandidate) {
-					evt := event{}
 
-					data := make(map[string]interface{})
+					if i != nil{
 
-					data["candidate"] = i
-					data["peer"] = user;
+						evt := event{}
+		
+						data := make(map[string]interface{})
+			
+						data["candidate"] = i.ToJSON()
+						data["peer"] = user
+			
+						evt.Event = "streamer-ice-candidate"
+						evt.Data = data
+			
+						candidate, _ := json.Marshal(evt);
+			
+						socketMutex.Lock()
+			
+						conn.Write(candidate)
+			
+						time.Sleep(time.Millisecond)
+			
+						socketMutex.Unlock()
+					}
 
-					evt.Event = "streamer-ice-candidate"
-					evt.Data = data
 
-					candidate, _ := json.Marshal(data);
-
-					conn.Write(candidate)
-
+		
 				})
 
-
-
+				if _, exists := dataMap["sdp"]; !exists {
+					dataMap["sdp"] = peerConnection.LocalDescription();
+				}
+				
 				peers[user.(string)] = *peerConnection;
 
 			}
 
+			video_offer.Data = dataMap;
+
+			jsonData, _ := json.Marshal(video_offer)
+
 			
-			conn.Write(offerSDP)
+			conn.Write(jsonData)
 			break
 		}
 
 		case "user-join-room":{
 
-			user := res.Data["user"].(string)
+			user := res.Data["peer"].(string)
 
 			peerConnection := createPeerConnection()
 
@@ -188,14 +194,16 @@ func main() {
 			break
 		}
 		case "video-answer":{
-
+			
 			peer := res.Data["peer"].(string)
-			candidate := res.Data["sdp"].(webrtc.SessionDescription)
+			sdp := res.Data["sdp"].(map[string]interface{})
+			
+
+			sessionDesc := webrtc.SessionDescription{SDP: sdp["sdp"].(string), Type: webrtc.NewSDPType(sdp["type"].(string)) }
 
 			peerConnection := peers[peer]
 
-			peerConnection.SetRemoteDescription(candidate)
-
+			peerConnection.SetRemoteDescription(sessionDesc)
 
 			break
 		}

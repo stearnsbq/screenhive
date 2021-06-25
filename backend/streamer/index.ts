@@ -26,17 +26,18 @@ try{
         }})
 
 
-        socket.on("data", ({event, data}: {event: string, data: any}) => {
-           data = JSON.parse(data.toString())
+        socket.on("data", (socketData) => {
 
+           const {event, data} = JSON.parse(socketData.toString())
 
+    
            switch(event){
             case "video-offer":{
                 ws.emit("video-offer", {roomID, sdp: data.sdp})
                 break;
             }
             case "streamer-ice-candidate":{
-                ws.emit("streamer-ice-candidate", {roomID, peer: data.peer, sdp: data.sdp})
+                ws.emit("streamer-ice-candidate", {roomID, peer: data.peer, candidate: data.candidate})
                 break;
             }
            }
@@ -63,21 +64,17 @@ try{
         })
     
 
-        ws.on("streamer-join-success", async ({users}) => {
+        ws.on("streamer-join-success", async ({peers}) => {
 
-            console.log(users)
+            console.log(peers)
 
-            socket.write(JSON.stringify({event: "start-webrtc", data: {users}}) + "\n")
+            socket.write(JSON.stringify({event: "start-webrtc", data: {peers}}) + "\n")
 
         })
 
         ws.on("user-join-room", async ({username}) => {
 
             socket.write(JSON.stringify({event: "get-video-offer", data: {username}}) + "\n")
-
-            const sdp = await getData() as string
-
-            ws.emit("video-offer", {roomID, sdp})
 
         })
     

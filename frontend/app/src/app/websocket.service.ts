@@ -22,8 +22,8 @@ export class WebsocketService {
 		this.logging.error(err);
 	}
 
-	public async videoAnswer(peer:string, sdp: any){
-		this.socket.emit('video-answer', {peer, sdp});
+	public async videoAnswer(roomID:string, sdp: any){
+		this.socket.emit('video-answer', {roomID, sdp});
 	}
 
 	public async iceCandidate(peer:string, roomID: string, candidate: any){

@@ -9,7 +9,6 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { AuthService } from '../auth.service';
 import { LoggingService } from '../logging.service';
@@ -167,12 +166,7 @@ export class RoomComponent implements OnInit, OnDestroy {
 
       this.peerConnection = new RTCPeerConnection(config);
 
-      const desc = new RTCSessionDescription(JSON.parse(sdp))
-
-      this.logging.info(JSON.stringify(desc))
-
-      this.peerConnection.setRemoteDescription(desc);
-
+      this.peerConnection.setRemoteDescription(sdp);
 
       this.peerConnection.addEventListener("icecandidate", ({candidate}) => {
 
@@ -182,35 +176,41 @@ export class RoomComponent implements OnInit, OnDestroy {
 
       })
 
+      this.peerConnection.addEventListener("connectionstatechange", (event) => {
+          this.logging.info(`Connection State: ${this.peerConnection.connectionState}`)
+      })
+
 
       const answer = await this.peerConnection.createAnswer()
 
       await this.peerConnection.setLocalDescription(answer)
 
-      this.peerConnection.ontrack = ({streams}) => {
-        this.logging.info("Got Track")
+      this.peerConnection.addEventListener("track", ({streams}) => {
+
+        console.log(streams)
+        
         this.player.nativeElement.srcObject = streams[0]
-      }
+      })
 
 
-      this.socketService.videoAnswer(this.auth.user().username, this.peerConnection.localDescription)
+
+
+      this.socketService.videoAnswer(this.roomID, this.peerConnection.localDescription)
 
 
     })
 
 
     this.socketService.listenToEvent("streamer-ice-candidate").subscribe(async ({candidate}) => {
-
+  
       try{
-        const iceCandidate = new RTCIceCandidate(candidate);
 
+        const iceCandidate = new RTCIceCandidate(candidate)
 
         await this.peerConnection.addIceCandidate(iceCandidate)
       }catch(err){
         this.logging.error(`Failed to add ice candidate! ${err}`)
       }
-
-
 
 
     })

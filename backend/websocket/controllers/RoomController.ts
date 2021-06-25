@@ -163,7 +163,7 @@ export class RoomController {
 	}
 
 	@OnMessage('streamer-join')
-	async onStreamerJoin(@ConnectedSocket() socket: any, @MessageBody() { streamer, roomID }: any) {
+	async onStreamerJoin(@SocketIO() io: any, @ConnectedSocket() socket: any, @MessageBody() { streamer, roomID }: any) {
 		if (!socket.streamer || (socket.streamer && socket.streamer.roomID !== roomID)) {
 			socket.emit('error', { err: 'Unauthorized' });
 		}
@@ -183,7 +183,10 @@ export class RoomController {
 
 			await lock.unlock();
 
-			socket.emit('streamer-join-success', { users: room.users });
+			const peers = await io.in(roomID).allSockets();
+
+			console.log([...peers])
+			socket.emit('streamer-join-success', { peers:  [...peers]});
 		} catch (err) {
 			socket.emit('error', { err });
 		}
@@ -230,6 +233,8 @@ export class RoomController {
 			await lock.unlock();
 
 			socket.to(roomID).emit('user-join-room', { username: user.username });
+
+			socket.to(room.streamer).emit('user-join-room', { peer: socket.id });
 
 			socket.emit('room-join-success', {
 				roomID,
@@ -315,7 +320,7 @@ export class RoomController {
 				return socket.emit('error', { err: 'User is not in the room!' });
 			}
 
-			socket.to(room.streamer).emit('video-answer', { peer: username, sdp });
+			socket.to(room.streamer).emit('video-answer', { peer: socket.id, sdp });
 
 			await lock.unlock();
 		} catch (err) {
@@ -340,9 +345,7 @@ export class RoomController {
 				return socket.emit('error', { err: 'User is not in the room!' });
 			}
 
-			console.log(room.streamer);
-
-			socket.to(room.streamer).emit('user-ice-candidate', { peer: username, candidate });
+			socket.to(room.streamer).emit('user-ice-candidate', { peer: socket.id, candidate });
 
 			await lock.unlock();
 		} catch (err) {
@@ -351,7 +354,7 @@ export class RoomController {
 	}
 
 	@OnMessage('streamer-ice-candidate')
-	async onStreamerIceCandidate(@ConnectedSocket() socket: any, @MessageBody() { roomID, candidate }: any) {
+	async onStreamerIceCandidate(@ConnectedSocket() socket: any, @MessageBody() { roomID, peer, candidate }: any) {
 		try {
 			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
@@ -359,7 +362,7 @@ export class RoomController {
 				return socket.emit('error', { err: 'Room does not exist!' });
 			}
 
-			socket.to(roomID).emit('streamer-ice-candidate', { candidate });
+			socket.to(peer).emit('streamer-ice-candidate', { candidate });
 
 			await lock.unlock();
 		} catch (err) {
