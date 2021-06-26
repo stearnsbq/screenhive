@@ -336,7 +336,7 @@ export class RoomController {
 
 			console.log(roomID, candidate)
 
-			//const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
 			if (!await this.redisService.asyncHExists('rooms', roomID)) {
 				return socket.emit('error', { err: 'Room does not exist!' });
@@ -350,7 +350,7 @@ export class RoomController {
 
 			socket.to(room.streamer).emit('user-ice-candidate', { peer: socket.id, candidate });
 
-			//await lock.unlock();
+			await lock.unlock();
 		} catch (err) {
 			socket.emit('error', { err });
 		}

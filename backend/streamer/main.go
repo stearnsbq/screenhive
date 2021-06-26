@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -34,12 +35,19 @@ var config = webrtc.Configuration{
 	},
 }
 
+
+
 var gst_video_pipline_str = "videotestsrc ! videoconvert ! queue"
 var gst_audio_pipline_str = "audiotestsrc"
 
 var peers = make(map[string]*peer)
 
+var keyMap = make(map[string]string)
+
+
 func main() {
+
+	initMap()
 
 	var socketMutex = &sync.Mutex{}
 
@@ -60,79 +68,24 @@ func main() {
 		err := json.Unmarshal([]byte(message), &res)
 
 		if err != nil {
-			fmt.Println("Failed to parse message from adapter!")
-			panic(err)
+			log.Println("Failed to parse message from adapter!", err)
+
+			continue
 		}
 
 		switch res.Event {
 
-			case "start-webrtc":
-				{
+		case "start-webrtc":
+			{
 
-					dataMap := make(map[string]interface{})
+				dataMap := make(map[string]interface{})
 
-					for _, user := range res.Data["peers"].([]interface{}) {
+				for _, user := range res.Data["peers"].([]interface{}) {
 
-						peer, err := createPeerConnection()
+					peer, err := createPeerConnection()
 
-						if err != nil{
+					if err != nil {
 
-							errorMap := make(map[string]interface{})
-
-							errorMap["err"] = err
-
-							evt := createEvent("error", errorMap)
-
-							serialized, _ := json.Marshal(evt)
-
-							conn.Write(serialized)
-
-							continue
-						}
-
-						peer.Connection.OnICECandidate(func(i *webrtc.ICECandidate) {
-
-							if i != nil {
-
-								data := make(map[string]interface{})
-
-								data["candidate"] = i.ToJSON()
-								data["peer"] = user
-
-								evt := createEvent("streamer-ice-candidate", data)
-
-								candidate, _ := json.Marshal(evt)
-
-								socketMutex.Lock()
-
-								conn.Write(candidate)
-
-								time.Sleep(time.Millisecond)
-
-								socketMutex.Unlock()
-							}
-
-						})
-
-						if _, exists := dataMap["sdp"]; !exists {
-							dataMap["sdp"] = peer.Connection.LocalDescription()
-						}
-
-						peers[user.(string)] = peer
-
-					}
-
-					serialized, _ := json.Marshal(createEvent("video-offer", dataMap))
-
-					conn.Write(serialized)
-					break
-				}
-
-			case "user-join-room":
-				{
-					serialized, err := onUserJoinRoom(res.Data["peer"].(string));
-
-					if err != nil{
 						errorMap := make(map[string]interface{})
 
 						errorMap["err"] = err
@@ -142,49 +95,174 @@ func main() {
 						serialized, _ := json.Marshal(evt)
 
 						conn.Write(serialized)
-						return
+
+						continue
 					}
 
-					conn.Write(serialized)
-					break
-				}
-			case "user-left-room":
-				{
-					onUserLeftRoom(res.Data["peer"].(string))
-					break
-				}
-			case "video-answer":
-				{
-					onVideoAnswer(res.Data["peer"].(string), res.Data["sdp"].(map[string]interface{}))
-					break
-				}
-			case "user-ice-candidate":
-				{
-					candidate := res.Data["candidate"]
+					peer.DataChannel.OnMessage(onDataChannelMessage)
+					peer.DataChannel.OnOpen(onDataChannelOpen)
+					peer.DataChannel.OnClose(onDataChannelClose)
+					peer.DataChannel.OnError(onDataChannelError)
 
-					if candidate != nil {
-						onUserIceCandidate(res.Data["peer"].(string), candidate.(map[string]interface{}))
+					peer.Connection.OnICECandidate(func(i *webrtc.ICECandidate) {
+
+						if i != nil {
+
+							data := make(map[string]interface{})
+
+							data["candidate"] = i.ToJSON()
+							data["peer"] = user
+
+							evt := createEvent("streamer-ice-candidate", data)
+
+							candidate, _ := json.Marshal(evt)
+
+							socketMutex.Lock()
+
+							conn.Write(candidate)
+
+							time.Sleep(time.Millisecond)
+
+							socketMutex.Unlock()
+						}
+
+					})
+
+					if _, exists := dataMap["sdp"]; !exists {
+						dataMap["sdp"] = peer.Connection.LocalDescription()
 					}
 
-					break
+					peers[user.(string)] = peer
+
 				}
-			default:
-				{
+
+				serialized, _ := json.Marshal(createEvent("video-offer", dataMap))
+
+				conn.Write(serialized)
+				break
+			}
+
+		case "user-join-room":
+			{
+				serialized, err := onUserJoinRoom(res.Data["peer"].(string))
+
+				if err != nil {
 					errorMap := make(map[string]interface{})
 
-					errorMap["err"] = "Unknown Event!"
+					errorMap["err"] = err
 
-					err := createEvent("error", errorMap)
+					evt := createEvent("error", errorMap)
 
-					serialized, _ := json.Marshal(err);
+					serialized, _ := json.Marshal(evt)
 
 					conn.Write(serialized)
+					return
 				}
+
+				conn.Write(serialized)
+				break
+			}
+		case "user-left-room":
+			{
+				onUserLeftRoom(res.Data["peer"].(string))
+				break
+			}
+		case "video-answer":
+			{
+				onVideoAnswer(res.Data["peer"].(string), res.Data["sdp"].(map[string]interface{}))
+				break
+			}
+		case "user-ice-candidate":
+			{
+				candidate := res.Data["candidate"]
+
+				if candidate != nil {
+					onUserIceCandidate(res.Data["peer"].(string), candidate.(map[string]interface{}))
+				}
+
+				break
+			}
+		default:
+			{
+				errorMap := make(map[string]interface{})
+
+				errorMap["err"] = "Unknown Event!"
+
+				err := createEvent("error", errorMap)
+
+				serialized, _ := json.Marshal(err)
+
+				conn.Write(serialized)
+			}
 		}
 
 	}
 
 }
+
+// Data Channel Functions
+
+func onDataChannelOpen() {
+
+}
+
+func onDataChannelClose() {
+
+}
+
+func onDataChannelMessage(msg webrtc.DataChannelMessage) {
+
+	if msg.IsString{
+
+		var evt event
+		json.Unmarshal(msg.Data, &evt)
+
+
+		switch evt.Event{
+			case "move-mouse":{
+				exec.Command("xdotool", "movemouse", evt.Data["x"].(string), evt.Data["y"].(string)).Run()
+				break
+			}
+			case "click":{
+				exec.Command("xdotool", "click").Run()
+				break
+			}
+			case "keyboard":{
+
+				key := evt.Data["key"].(string)
+
+				var code string
+
+				if _, exists := keyMap[key]; exists {
+					code = keyMap[key]
+				}else{
+					code = key
+				}
+
+				exec.Command("xdotool", "key", code).Run()
+				break
+			}
+			case "copy":{
+				exec.Command("xdotool", "key", "ctrl+c").Run()
+				break
+			}
+			case "paste":{
+				exec.Command("xdotool", "key", "ctrl+v").Run()
+				break
+			}
+		}
+
+
+
+	}
+
+}
+
+func onDataChannelError(err error) {
+
+}
+
+//
 
 func createEvent(eventType string, data map[string]interface{}) event {
 	return event{Event: eventType, Data: data}
@@ -210,7 +288,7 @@ func createPeerConnection() (*peer, error) {
 		return nil, err
 	}
 
-	vp8Track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/vp8"}, "video", "pion2")
+	vp8Track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/h264"}, "video", "pion2")
 
 	if err != nil {
 		log.Println("Failed to create video track!")
@@ -246,7 +324,7 @@ func createPeerConnection() (*peer, error) {
 		return nil, err
 	}
 
-	return &peer{DataChannel: dataChannel, Connection: peerConnection, AudioPipline: gst.CreatePipeline("opus", []*webrtc.TrackLocalStaticSample{opusTrack}, gst_audio_pipline_str), VideoPipeline: gst.CreatePipeline("vp8", []*webrtc.TrackLocalStaticSample{vp8Track}, gst_video_pipline_str)}, nil
+	return &peer{DataChannel: dataChannel, Connection: peerConnection, AudioPipline: gst.CreatePipeline("opus", []*webrtc.TrackLocalStaticSample{opusTrack}, gst_audio_pipline_str), VideoPipeline: gst.CreatePipeline("h264", []*webrtc.TrackLocalStaticSample{vp8Track}, gst_video_pipline_str)}, nil
 }
 
 func onUserLeftRoom(peerID string) {
@@ -278,7 +356,7 @@ func onUserIceCandidate(peerID string, candidate map[string]interface{}) {
 	peer := peers[peerID]
 
 	Candidate := candidate["candidate"].(string)
-	SDPMLineIndex := candidate["sdpMLineIndex"].(uint16)
+	SDPMLineIndex := uint16(candidate["sdpMLineIndex"].(float64))
 	SDPMid := candidate["sdpMid"].(string)
 
 	iceCandidate := webrtc.ICECandidateInit{Candidate: Candidate, SDPMLineIndex: &SDPMLineIndex, SDPMid: &SDPMid, UsernameFragment: &peerID}
@@ -289,7 +367,7 @@ func onUserIceCandidate(peerID string, candidate map[string]interface{}) {
 func onUserJoinRoom(peerID string) ([]byte, error) {
 	peer, err := createPeerConnection()
 
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -302,4 +380,15 @@ func onUserJoinRoom(peerID string) ([]byte, error) {
 
 	serialized, _ := json.Marshal(event{Event: "video-offer", Data: data})
 	return serialized, nil
+}
+
+
+func initMap(){
+	keyMap[" "] = "space"
+	keyMap["("] = "parenright"
+	keyMap[")"] = "parenleft"
+	keyMap["!"] = "exclam"
+	keyMap["Enter"] = "Return"
+	keyMap["Backspace"] = "BackSpace"
+	keyMap["."] = "period"
 }

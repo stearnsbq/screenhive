@@ -2,10 +2,22 @@ import { io } from 'socket.io-client';
 import { config } from 'dotenv';
 import { createServer } from 'net';
 import * as jwt from 'jsonwebtoken';
+import { spawn } from 'child_process';
+import { exit } from 'process';
 
 config();
 
 try {
+
+
+    if(!process.env.STREAMER_TOKEN || !process.env.WS_SERVER){
+        console.log("MISSING ENV FILE!")
+        exit(1)
+    }
+
+
+
+
 	const goSocketServer = createServer();
 
 	const { roomID } = jwt.decode(process.env.STREAMER_TOKEN as string) as any;
@@ -15,7 +27,7 @@ try {
 
 		const ws = io(process.env.WS_SERVER as string, {
 			query: {
-				token: process.env.STREAMER_TOKEN || ''
+				token: process.env.STREAMER_TOKEN as string
 			}
 		});
 
@@ -72,13 +84,21 @@ try {
 		});
 	});
 
-	goSocketServer.on('close', () => {});
+	goSocketServer.on('close', () => {
+        console.log("closed")
+    });
 
-	goSocketServer.on('error', () => {});
+	goSocketServer.on('error', () => {
+        console.log("error")
+    });
 
 	goSocketServer.listen(9000, () => {
 		console.log('listening');
 	});
+
+
+    const go = spawn("go run main.go", {shell: true})
+
 } catch (err) {
 	console.log(err);
 }
