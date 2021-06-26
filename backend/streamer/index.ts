@@ -97,7 +97,12 @@ try {
 	});
 
 
-    const go = spawn("go run main.go", {shell: true})
+    // const go = spawn("go run main.go", {shell: true})
+
+	// go.stdout.on("data", (data) => {
+	// 	console.log(data)
+	// })
+
 
 } catch (err) {
 	console.log(err);
