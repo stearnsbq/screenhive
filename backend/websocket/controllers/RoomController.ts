@@ -287,7 +287,7 @@ export class RoomController {
 	}
 
 	@OnMessage('video-offer')
-	async onVideoOffer(@ConnectedSocket() socket: any, @MessageBody() { roomID, sdp }: any) {
+	async onVideoOffer(@ConnectedSocket() socket: any, @MessageBody() { roomID, peer, sdp }: any) {
 		try {
 			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
@@ -295,7 +295,8 @@ export class RoomController {
 				return socket.emit('error', { err: 'Room does not exist!' });
 			}
 
-			socket.to(roomID).emit('video-offer', { sdp });
+
+			peer ? socket.to(peer).emit('video-offer', { sdp }) : socket.to(roomID).emit('video-offer', { sdp });
 
 			await lock.unlock();
 		} catch (err) {
@@ -304,7 +305,7 @@ export class RoomController {
 	}
 
 	@OnMessage('video-answer')
-	async onVideoAnswer(@ConnectedSocket() socket: any, @MessageBody() { roomID, sdp }: any) {
+	async onVideoAnswer(@ConnectedSocket() socket: any, @MessageBody() { roomID,  sdp }: any) {
 		try {
 			const { username } = socket.user;
 
@@ -333,7 +334,9 @@ export class RoomController {
 		try {
 			const { username } = socket.user;
 
-			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+			console.log(roomID, candidate)
+
+			//const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
 			if (!await this.redisService.asyncHExists('rooms', roomID)) {
 				return socket.emit('error', { err: 'Room does not exist!' });
@@ -347,7 +350,7 @@ export class RoomController {
 
 			socket.to(room.streamer).emit('user-ice-candidate', { peer: socket.id, candidate });
 
-			await lock.unlock();
+			//await lock.unlock();
 		} catch (err) {
 			socket.emit('error', { err });
 		}

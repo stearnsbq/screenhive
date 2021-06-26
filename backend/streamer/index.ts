@@ -33,7 +33,7 @@ try{
     
            switch(event){
             case "video-offer":{
-                ws.emit("video-offer", {roomID, sdp: data.sdp})
+                ws.emit("video-offer", {roomID, sdp: data.sdp, peer: data.peer})
                 break;
             }
             case "streamer-ice-candidate":{
@@ -72,9 +72,9 @@ try{
 
         })
 
-        ws.on("user-join-room", async ({username}) => {
+        ws.on("user-join-room", async ({peer}) => {
 
-            socket.write(JSON.stringify({event: "get-video-offer", data: {username}}) + "\n")
+            socket.write(JSON.stringify({event: "user-join-room", data: {peer}}) + "\n")
 
         })
     
@@ -84,7 +84,6 @@ try{
         })
     
         ws.on("user-ice-candidate", ({peer, candidate}) => {
-            console.log(peer, candidate)
             socket.write(JSON.stringify({event: "user-ice-candidate", data: {peer, candidate}}) + "\n");
         })
     

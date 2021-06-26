@@ -13,33 +13,32 @@ import (
 	gst "screenhive.io/streamer/include/gstreamer-src"
 )
 
-
-
-type event struct{
-	Event string  `json:"event"`
-	Data map[string]interface{} `json:"data"`
+type event struct {
+	Event string                 `json:"event"`
+	Data  map[string]interface{} `json:"data"`
 }
 
+type peer struct {
+	Connection *webrtc.PeerConnection
+	AudioPipline *gst.Pipeline
+	VideoPipeline *gst.Pipeline
+}
 
-
-var peers = make(map[string]webrtc.PeerConnection)
-
-
+var peers = make(map[string]peer)
 
 func main() {
 
 	var socketMutex = &sync.Mutex{}
 
-	gst_video_pipline_str := "autovideosrc ! video/x-raw, width=320, height=240 ! videoconvert ! queue"
+	gst_video_pipline_str := "videotestsrc ! videoconvert ! queue"
 	gst_audio_pipline_str := "audiotestsrc"
 
 	conn, err := net.Dial("tcp", "127.0.0.1:9000")
 
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
-
 
 	config := webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
@@ -49,22 +48,9 @@ func main() {
 		},
 	}
 
-	opusTrack, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "audio/opus"}, "audio", "pion1")
 
-	if err != nil {
-		panic(err)
-	} 
 
-	vp8Track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/vp8"}, "video", "pion2")
-
-	if err != nil {
-		panic(err)
-	} 
-
-	gst.CreatePipeline("opus", []*webrtc.TrackLocalStaticSample{opusTrack}, gst_audio_pipline_str).Start()
-	gst.CreatePipeline("vp8", []*webrtc.TrackLocalStaticSample{vp8Track}, gst_video_pipline_str).Start()
-
-	createPeerConnection := func () *webrtc.PeerConnection{
+	createPeerConnection := func() peer {
 
 		peerConnection, err := webrtc.NewPeerConnection(config)
 
@@ -76,6 +62,19 @@ func main() {
 			fmt.Printf("Connection State has changed %s \n", connectionState.String())
 		})
 
+		opusTrack, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "audio/opus"}, "audio", "pion1")
+
+		if err != nil {
+			panic(err)
+		}
+	
+		vp8Track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/vp8"}, "video", "pion2")
+	
+		if err != nil {
+			panic(err)
+		}
+	
+
 		if _, err = peerConnection.AddTrack(opusTrack); err != nil {
 			panic(err)
 		}
@@ -83,7 +82,7 @@ func main() {
 		if _, err = peerConnection.AddTrack(vp8Track); err != nil {
 			panic(err)
 		}
-		
+
 		offer, err := peerConnection.CreateOffer(nil)
 
 		if err != nil {
@@ -94,151 +93,177 @@ func main() {
 			panic(err)
 		}
 
-		return peerConnection
+
+		
+		peer := peer{}
+
+		peer.Connection = peerConnection
+		peer.AudioPipline = gst.CreatePipeline("opus", []*webrtc.TrackLocalStaticSample{opusTrack}, gst_audio_pipline_str)
+		peer.VideoPipeline = gst.CreatePipeline("vp8", []*webrtc.TrackLocalStaticSample{vp8Track}, gst_video_pipline_str)
+
+
+		return peer
+
 	}
 
-	for { 
-	  message, _ := bufio.NewReader(conn).ReadString('\n')
+	for {
+		message, _ := bufio.NewReader(conn).ReadString('\n')
 
-	  
-	  var res event
+		fmt.Println(message)
 
-	  err := json.Unmarshal([]byte(message), &res)
+		var res event
+
+		err := json.Unmarshal([]byte(message), &res)
+
+		if err != nil {
+			panic(err)
+		}
+
+		switch res.Event {
+		case "start-webrtc":
+			{
+
+				video_offer := event{}
+
+				dataMap := make(map[string]interface{})
+
+				video_offer.Event = "video-offer"
+
+				for _, user := range res.Data["peers"].([]interface{}) {
 
 
-	  if err != nil{
-		  panic(err)
-	  }
+					peer := createPeerConnection()
 
+					peer.Connection.OnICECandidate(func(i *webrtc.ICECandidate) {
 
-	  switch res.Event{
-		case "start-webrtc": {
+						if i != nil {
 
-			video_offer := event{}
+							evt := event{}
 
-			dataMap := make(map[string]interface{})
+							data := make(map[string]interface{})
 
-			video_offer.Event = "video-offer"
+							data["candidate"] = i.ToJSON()
+							data["peer"] = user
 
-			for _, user := range res.Data["peers"].([]interface{}){
+							evt.Event = "streamer-ice-candidate"
+							evt.Data = data
 
-				peerConnection := createPeerConnection()
+							candidate, _ := json.Marshal(evt)
 
-				peerConnection.OnICECandidate(func(i *webrtc.ICECandidate) {
+							socketMutex.Lock()
 
-					if i != nil{
+							conn.Write(candidate)
 
-						evt := event{}
-		
-						data := make(map[string]interface{})
-			
-						data["candidate"] = i.ToJSON()
-						data["peer"] = user
-			
-						evt.Event = "streamer-ice-candidate"
-						evt.Data = data
-			
-						candidate, _ := json.Marshal(evt);
-			
-						socketMutex.Lock()
-			
-						conn.Write(candidate)
-			
-						time.Sleep(time.Millisecond)
-			
-						socketMutex.Unlock()
+							time.Sleep(time.Millisecond)
+
+							socketMutex.Unlock()
+						}
+
+					})
+
+					if _, exists := dataMap["sdp"]; !exists {
+						dataMap["sdp"] = peer.Connection.LocalDescription()
 					}
 
+					peers[user.(string)] = peer
 
-		
-				})
 
-				if _, exists := dataMap["sdp"]; !exists {
-					dataMap["sdp"] = peerConnection.LocalDescription();
 				}
-				
-				peers[user.(string)] = *peerConnection;
 
+				video_offer.Data = dataMap
+
+				jsonData, _ := json.Marshal(video_offer)
+
+				conn.Write(jsonData)
+				break
 			}
 
-			video_offer.Data = dataMap;
+		case "user-join-room":
+			{
 
-			jsonData, _ := json.Marshal(video_offer)
+				peerID := res.Data["peer"].(string)
+
+
+				peer := createPeerConnection()
+
+				peers[peerID] = peer
+
+				evt := event{}
+
+				data := make(map[string]interface{})
 
 			
-			conn.Write(jsonData)
-			break
-		}
+				data["peer"] = peerID
+				data["sdp"] = peer.Connection.LocalDescription()
 
-		case "user-join-room":{
+				evt.Event = "video-offer"
+				evt.Data = data;
 
-			user := res.Data["peer"].(string)
+				serialized, _ := json.Marshal(evt)
 
-			peerConnection := createPeerConnection()
+				conn.Write(serialized)
+				break
+			}
+		case "user-left-room":
+			{
 
-			peers[user] = *peerConnection
+				peerID := res.Data["peer"].(string)
 
-			conn.Write([]byte(peerConnection.LocalDescription().SDP))
-			break
-		}
-		case "user-left-room":{
+				peer := peers[peerID]
 
-			user := res.Data["user"].(string)
+				peer.Connection.Close()
 
-			peerConnection := peers[user];
+				peer.VideoPipeline.Stop()
 
-			peerConnection.Close()
+				peer.AudioPipline.Stop()
 
-			delete(peers, user)
+				delete(peers, peerID)
 
-			break
-		}
-		case "video-answer":{
-			
-			peer := res.Data["peer"].(string)
-			sdp := res.Data["sdp"].(map[string]interface{})
-			
+				break
+			}
+		case "video-answer":
+			{
 
-			sessionDesc := webrtc.SessionDescription{SDP: sdp["sdp"].(string), Type: webrtc.NewSDPType(sdp["type"].(string)) }
+				peerID := res.Data["peer"].(string)
+				sdp := res.Data["sdp"].(map[string]interface{})
 
-			peerConnection := peers[peer]
+				sessionDesc := webrtc.SessionDescription{SDP: sdp["sdp"].(string), Type: webrtc.NewSDPType(sdp["type"].(string))}
 
-			peerConnection.SetRemoteDescription(sessionDesc)
+				peer := peers[peerID]
 
-			break
-		}
-		case "user-ice-candidate":{
+				peer.Connection.SetRemoteDescription(sessionDesc)
 
+				peer.AudioPipline.Start()
+				peer.VideoPipeline.Start()
 
-			if res.Data["candidate"] != nil{
+				break
+			}
+		case "user-ice-candidate":
+			{
 
-				peer := res.Data["peer"].(string)
-				candidate := res.Data["candidate"].(map[string]interface {})
+				if res.Data["candidate"] != nil {
 
-				peerConnection := peers[peer]
+					peerID := res.Data["peer"].(string)
+					candidate := res.Data["candidate"].(map[string]interface{})
 
-				Candidate := candidate["candidate"].(string)
-				SDPMLineIndex, _ := candidate["sdpMLineIndex"].(float64)
-				SDPMid := candidate["sdpMid"].(string)
-	
-				SDPMLineIndexPtr := uint16(SDPMLineIndex)
-	
-				iceCandidate := webrtc.ICECandidateInit{Candidate: Candidate, SDPMLineIndex: &SDPMLineIndexPtr , SDPMid: &SDPMid, UsernameFragment: &peer }
-	
-				peerConnection.AddICECandidate(iceCandidate)
+					peer := peers[peerID]
 
+					Candidate := candidate["candidate"].(string)
+					SDPMLineIndex, _ := candidate["sdpMLineIndex"].(float64)
+					SDPMid := candidate["sdpMid"].(string)
+
+					SDPMLineIndexPtr := uint16(SDPMLineIndex)
+
+					iceCandidate := webrtc.ICECandidateInit{Candidate: Candidate, SDPMLineIndex: &SDPMLineIndexPtr, SDPMid: &SDPMid, UsernameFragment: &peerID}
+
+					peer.Connection.AddICECandidate(iceCandidate)
+					
+				}
+
+				break
 			}
 
-	
-
-
-			break
 		}
-	  }
-
-
-
-
 
 	}
 

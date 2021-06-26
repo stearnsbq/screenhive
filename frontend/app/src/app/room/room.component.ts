@@ -67,6 +67,18 @@ export class RoomComponent implements OnInit, OnDestroy {
     this.muted = false;
     this.playerVolume = 0.0;
     this.isPasswordDialogOpen = false;
+
+
+
+
+    const config = {
+      iceServers: [{ urls: environment.ice_server }]
+    };
+
+
+    this.peerConnection = new RTCPeerConnection(config);
+
+
   }
 
 
@@ -159,13 +171,6 @@ export class RoomComponent implements OnInit, OnDestroy {
 
     this.socketService.listenToEvent('video-offer').subscribe(async ({sdp}) => {
 
-      const config = {
-        iceServers: [{ urls: environment.ice_server }]
-      };
-
-
-      this.peerConnection = new RTCPeerConnection(config);
-
       this.peerConnection.setRemoteDescription(sdp);
 
       this.peerConnection.addEventListener("icecandidate", ({candidate}) => {
@@ -176,21 +181,37 @@ export class RoomComponent implements OnInit, OnDestroy {
 
       })
 
+      this.peerConnection.addEventListener("iceconnectionstatechange", (event) => {
+        this.logging.info(`ICE Connection State: ${this.peerConnection.iceConnectionState}`)
+    })
+
       this.peerConnection.addEventListener("connectionstatechange", (event) => {
           this.logging.info(`Connection State: ${this.peerConnection.connectionState}`)
       })
 
+      this.peerConnection.addEventListener("track", ({streams}) => {
+        const stream = streams[0];
+
+        console.log(stream.getAudioTracks())
+
+
+        if(this.player.nativeElement.srcObject){
+          const playerStream = this.player.nativeElement.srcObject as MediaStream;
+
+          playerStream.addTrack(stream.getVideoTracks()[0])
+          
+        }else{
+          this.player.nativeElement.srcObject = stream
+        }
+
+        
+      })
 
       const answer = await this.peerConnection.createAnswer()
 
       await this.peerConnection.setLocalDescription(answer)
 
-      this.peerConnection.addEventListener("track", ({streams}) => {
 
-        console.log(streams)
-        
-        this.player.nativeElement.srcObject = streams[0]
-      })
 
 
 
