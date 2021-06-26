@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -19,252 +20,286 @@ type event struct {
 }
 
 type peer struct {
-	Connection *webrtc.PeerConnection
-	AudioPipline *gst.Pipeline
+	Connection    *webrtc.PeerConnection
+	AudioPipline  *gst.Pipeline
 	VideoPipeline *gst.Pipeline
+	DataChannel   *webrtc.DataChannel
 }
 
-var peers = make(map[string]peer)
+var config = webrtc.Configuration{
+	ICEServers: []webrtc.ICEServer{
+		{
+			URLs: []string{"stun:stun.l.google.com:19302"},
+		},
+	},
+}
+
+var gst_video_pipline_str = "videotestsrc ! videoconvert ! queue"
+var gst_audio_pipline_str = "audiotestsrc"
+
+var peers = make(map[string]*peer)
 
 func main() {
 
 	var socketMutex = &sync.Mutex{}
 
-	gst_video_pipline_str := "videotestsrc ! videoconvert ! queue"
-	gst_audio_pipline_str := "audiotestsrc"
-
 	conn, err := net.Dial("tcp", "127.0.0.1:9000")
 
 	if err != nil {
+		fmt.Println("Failed to connect to adapter!")
 		panic(err)
 	}
+
 	defer conn.Close()
-
-	config := webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{"stun:stun.l.google.com:19302"},
-			},
-		},
-	}
-
-
-
-	createPeerConnection := func() peer {
-
-		peerConnection, err := webrtc.NewPeerConnection(config)
-
-		if err != nil {
-			panic(err)
-		}
-
-		peerConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
-			fmt.Printf("Connection State has changed %s \n", connectionState.String())
-		})
-
-		opusTrack, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "audio/opus"}, "audio", "pion1")
-
-		if err != nil {
-			panic(err)
-		}
-	
-		vp8Track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/vp8"}, "video", "pion2")
-	
-		if err != nil {
-			panic(err)
-		}
-	
-
-		if _, err = peerConnection.AddTrack(opusTrack); err != nil {
-			panic(err)
-		}
-
-		if _, err = peerConnection.AddTrack(vp8Track); err != nil {
-			panic(err)
-		}
-
-		offer, err := peerConnection.CreateOffer(nil)
-
-		if err != nil {
-			panic(err)
-		}
-
-		if err = peerConnection.SetLocalDescription(offer); err != nil {
-			panic(err)
-		}
-
-
-		
-		peer := peer{}
-
-		peer.Connection = peerConnection
-		peer.AudioPipline = gst.CreatePipeline("opus", []*webrtc.TrackLocalStaticSample{opusTrack}, gst_audio_pipline_str)
-		peer.VideoPipeline = gst.CreatePipeline("vp8", []*webrtc.TrackLocalStaticSample{vp8Track}, gst_video_pipline_str)
-
-
-		return peer
-
-	}
 
 	for {
 		message, _ := bufio.NewReader(conn).ReadString('\n')
-
-		fmt.Println(message)
 
 		var res event
 
 		err := json.Unmarshal([]byte(message), &res)
 
 		if err != nil {
+			fmt.Println("Failed to parse message from adapter!")
 			panic(err)
 		}
 
 		switch res.Event {
-		case "start-webrtc":
-			{
 
-				video_offer := event{}
+			case "start-webrtc":
+				{
 
-				dataMap := make(map[string]interface{})
+					dataMap := make(map[string]interface{})
 
-				video_offer.Event = "video-offer"
+					for _, user := range res.Data["peers"].([]interface{}) {
 
-				for _, user := range res.Data["peers"].([]interface{}) {
+						peer, err := createPeerConnection()
 
+						if err != nil{
 
-					peer := createPeerConnection()
+							errorMap := make(map[string]interface{})
 
-					peer.Connection.OnICECandidate(func(i *webrtc.ICECandidate) {
+							errorMap["err"] = err
 
-						if i != nil {
+							evt := createEvent("error", errorMap)
 
-							evt := event{}
+							serialized, _ := json.Marshal(evt)
 
-							data := make(map[string]interface{})
+							conn.Write(serialized)
 
-							data["candidate"] = i.ToJSON()
-							data["peer"] = user
-
-							evt.Event = "streamer-ice-candidate"
-							evt.Data = data
-
-							candidate, _ := json.Marshal(evt)
-
-							socketMutex.Lock()
-
-							conn.Write(candidate)
-
-							time.Sleep(time.Millisecond)
-
-							socketMutex.Unlock()
+							continue
 						}
 
-					})
+						peer.Connection.OnICECandidate(func(i *webrtc.ICECandidate) {
 
-					if _, exists := dataMap["sdp"]; !exists {
-						dataMap["sdp"] = peer.Connection.LocalDescription()
+							if i != nil {
+
+								data := make(map[string]interface{})
+
+								data["candidate"] = i.ToJSON()
+								data["peer"] = user
+
+								evt := createEvent("streamer-ice-candidate", data)
+
+								candidate, _ := json.Marshal(evt)
+
+								socketMutex.Lock()
+
+								conn.Write(candidate)
+
+								time.Sleep(time.Millisecond)
+
+								socketMutex.Unlock()
+							}
+
+						})
+
+						if _, exists := dataMap["sdp"]; !exists {
+							dataMap["sdp"] = peer.Connection.LocalDescription()
+						}
+
+						peers[user.(string)] = peer
+
 					}
 
-					peers[user.(string)] = peer
+					serialized, _ := json.Marshal(createEvent("video-offer", dataMap))
 
-
+					conn.Write(serialized)
+					break
 				}
 
-				video_offer.Data = dataMap
+			case "user-join-room":
+				{
+					serialized, err := onUserJoinRoom(res.Data["peer"].(string));
 
-				jsonData, _ := json.Marshal(video_offer)
+					if err != nil{
+						errorMap := make(map[string]interface{})
 
-				conn.Write(jsonData)
-				break
-			}
+						errorMap["err"] = err
 
-		case "user-join-room":
-			{
+						evt := createEvent("error", errorMap)
 
-				peerID := res.Data["peer"].(string)
+						serialized, _ := json.Marshal(evt)
 
+						conn.Write(serialized)
+						return
+					}
 
-				peer := createPeerConnection()
-
-				peers[peerID] = peer
-
-				evt := event{}
-
-				data := make(map[string]interface{})
-
-			
-				data["peer"] = peerID
-				data["sdp"] = peer.Connection.LocalDescription()
-
-				evt.Event = "video-offer"
-				evt.Data = data;
-
-				serialized, _ := json.Marshal(evt)
-
-				conn.Write(serialized)
-				break
-			}
-		case "user-left-room":
-			{
-
-				peerID := res.Data["peer"].(string)
-
-				peer := peers[peerID]
-
-				peer.Connection.Close()
-
-				peer.VideoPipeline.Stop()
-
-				peer.AudioPipline.Stop()
-
-				delete(peers, peerID)
-
-				break
-			}
-		case "video-answer":
-			{
-
-				peerID := res.Data["peer"].(string)
-				sdp := res.Data["sdp"].(map[string]interface{})
-
-				sessionDesc := webrtc.SessionDescription{SDP: sdp["sdp"].(string), Type: webrtc.NewSDPType(sdp["type"].(string))}
-
-				peer := peers[peerID]
-
-				peer.Connection.SetRemoteDescription(sessionDesc)
-
-				peer.AudioPipline.Start()
-				peer.VideoPipeline.Start()
-
-				break
-			}
-		case "user-ice-candidate":
-			{
-
-				if res.Data["candidate"] != nil {
-
-					peerID := res.Data["peer"].(string)
-					candidate := res.Data["candidate"].(map[string]interface{})
-
-					peer := peers[peerID]
-
-					Candidate := candidate["candidate"].(string)
-					SDPMLineIndex, _ := candidate["sdpMLineIndex"].(float64)
-					SDPMid := candidate["sdpMid"].(string)
-
-					SDPMLineIndexPtr := uint16(SDPMLineIndex)
-
-					iceCandidate := webrtc.ICECandidateInit{Candidate: Candidate, SDPMLineIndex: &SDPMLineIndexPtr, SDPMid: &SDPMid, UsernameFragment: &peerID}
-
-					peer.Connection.AddICECandidate(iceCandidate)
-					
+					conn.Write(serialized)
+					break
 				}
+			case "user-left-room":
+				{
+					onUserLeftRoom(res.Data["peer"].(string))
+					break
+				}
+			case "video-answer":
+				{
+					onVideoAnswer(res.Data["peer"].(string), res.Data["sdp"].(map[string]interface{}))
+					break
+				}
+			case "user-ice-candidate":
+				{
+					candidate := res.Data["candidate"]
 
-				break
-			}
+					if candidate != nil {
+						onUserIceCandidate(res.Data["peer"].(string), candidate.(map[string]interface{}))
+					}
 
+					break
+				}
+			default:
+				{
+					errorMap := make(map[string]interface{})
+
+					errorMap["err"] = "Unknown Event!"
+
+					err := createEvent("error", errorMap)
+
+					serialized, _ := json.Marshal(err);
+
+					conn.Write(serialized)
+				}
 		}
 
 	}
 
+}
+
+func createEvent(eventType string, data map[string]interface{}) event {
+	return event{Event: eventType, Data: data}
+}
+
+func createPeerConnection() (*peer, error) {
+
+	peerConnection, err := webrtc.NewPeerConnection(config)
+
+	if err != nil {
+		log.Println("Failed to create peer connection!")
+		return nil, err
+	}
+
+	peerConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
+		log.Printf("Connection State has changed %s \n", connectionState.String())
+	})
+
+	opusTrack, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "audio/opus"}, "audio", "pion1")
+
+	if err != nil {
+		log.Println("Failed to create audio track!")
+		return nil, err
+	}
+
+	vp8Track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/vp8"}, "video", "pion2")
+
+	if err != nil {
+		log.Println("Failed to create video track!")
+		return nil, err
+	}
+
+	if _, err = peerConnection.AddTrack(opusTrack); err != nil {
+		log.Println("Failed to add audio track to the peer connection!")
+		return nil, err
+	}
+
+	if _, err = peerConnection.AddTrack(vp8Track); err != nil {
+		log.Println("Failed to add video track to the peer connection!")
+		return nil, err
+	}
+
+	offer, err := peerConnection.CreateOffer(nil)
+
+	if err != nil {
+		log.Println("Failed to create offer!")
+		return nil, err
+	}
+
+	if err = peerConnection.SetLocalDescription(offer); err != nil {
+		log.Println("Failed to set local session description!")
+		return nil, err
+	}
+
+	dataChannel, err := peerConnection.CreateDataChannel("remote", nil)
+
+	if err != nil {
+		log.Println("Failed to create data channel")
+		return nil, err
+	}
+
+	return &peer{DataChannel: dataChannel, Connection: peerConnection, AudioPipline: gst.CreatePipeline("opus", []*webrtc.TrackLocalStaticSample{opusTrack}, gst_audio_pipline_str), VideoPipeline: gst.CreatePipeline("vp8", []*webrtc.TrackLocalStaticSample{vp8Track}, gst_video_pipline_str)}, nil
+}
+
+func onUserLeftRoom(peerID string) {
+	peer := peers[peerID]
+
+	peer.DataChannel.Close()
+
+	peer.Connection.Close()
+
+	peer.VideoPipeline.Stop()
+
+	peer.AudioPipline.Stop()
+
+	delete(peers, peerID)
+}
+
+func onVideoAnswer(peerID string, sdp map[string]interface{}) {
+	sessionDesc := webrtc.SessionDescription{SDP: sdp["sdp"].(string), Type: webrtc.NewSDPType(sdp["type"].(string))}
+
+	peer := peers[peerID]
+
+	peer.Connection.SetRemoteDescription(sessionDesc)
+
+	peer.AudioPipline.Start()
+	peer.VideoPipeline.Start()
+}
+
+func onUserIceCandidate(peerID string, candidate map[string]interface{}) {
+	peer := peers[peerID]
+
+	Candidate := candidate["candidate"].(string)
+	SDPMLineIndex := candidate["sdpMLineIndex"].(uint16)
+	SDPMid := candidate["sdpMid"].(string)
+
+	iceCandidate := webrtc.ICECandidateInit{Candidate: Candidate, SDPMLineIndex: &SDPMLineIndex, SDPMid: &SDPMid, UsernameFragment: &peerID}
+
+	peer.Connection.AddICECandidate(iceCandidate)
+}
+
+func onUserJoinRoom(peerID string) ([]byte, error) {
+	peer, err := createPeerConnection()
+
+	if err != nil{
+		return nil, err
+	}
+
+	peers[peerID] = peer
+
+	data := make(map[string]interface{})
+
+	data["peer"] = peerID
+	data["sdp"] = peer.Connection.LocalDescription()
+
+	serialized, _ := json.Marshal(event{Event: "video-offer", Data: data})
+	return serialized, nil
 }
