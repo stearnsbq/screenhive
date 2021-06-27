@@ -37,8 +37,8 @@ var config = webrtc.Configuration{
 
 
 
-var gst_video_pipline_str = "videotestsrc ! videoconvert ! queue"
-var gst_audio_pipline_str = "audiotestsrc"
+var gst_video_pipline_str = "ximagesrc ! videoconvert ! queue"
+var gst_audio_pipline_str = "pulsesrc device = \"alsa_output.pci-0000_02_02.0.analog-stereo.monitor\" ! audioconvert ! queue" 
 
 var peers = make(map[string]*peer)
 
@@ -98,11 +98,6 @@ func main() {
 
 						continue
 					}
-
-					peer.DataChannel.OnMessage(onDataChannelMessage)
-					peer.DataChannel.OnOpen(onDataChannelOpen)
-					peer.DataChannel.OnClose(onDataChannelClose)
-					peer.DataChannel.OnError(onDataChannelError)
 
 					peer.Connection.OnICECandidate(func(i *webrtc.ICECandidate) {
 
@@ -203,7 +198,7 @@ func main() {
 // Data Channel Functions
 
 func onDataChannelOpen() {
-
+	fmt.Println("Data Channel Opened!")
 }
 
 func onDataChannelClose() {
@@ -220,7 +215,7 @@ func onDataChannelMessage(msg webrtc.DataChannelMessage) {
 
 		switch evt.Event{
 			case "move-mouse":{
-				exec.Command("xdotool", "movemouse", evt.Data["x"].(string), evt.Data["y"].(string)).Run()
+				exec.Command("xdotool", "mousemove", fmt.Sprint(evt.Data["x"].(float64)), fmt.Sprint(evt.Data["y"].(float64))).Run()
 				break
 			}
 			case "click":{
@@ -277,6 +272,19 @@ func createPeerConnection() (*peer, error) {
 		return nil, err
 	}
 
+	dataChannel, err := peerConnection.CreateDataChannel("remote", nil)
+
+	if err != nil {
+		log.Println("Failed to create data channel")
+		return nil, err
+	}
+
+
+	dataChannel.OnMessage(onDataChannelMessage)
+	dataChannel.OnOpen(onDataChannelOpen)
+	dataChannel.OnClose(onDataChannelClose)
+	dataChannel.OnError(onDataChannelError)
+
 	peerConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
 		log.Printf("Connection State has changed %s \n", connectionState.String())
 	})
@@ -288,7 +296,7 @@ func createPeerConnection() (*peer, error) {
 		return nil, err
 	}
 
-	vp8Track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/h264"}, "video", "pion2")
+	vp8Track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/vp8"}, "video", "pion2")
 
 	if err != nil {
 		log.Println("Failed to create video track!")
@@ -317,14 +325,9 @@ func createPeerConnection() (*peer, error) {
 		return nil, err
 	}
 
-	dataChannel, err := peerConnection.CreateDataChannel("remote", nil)
 
-	if err != nil {
-		log.Println("Failed to create data channel")
-		return nil, err
-	}
 
-	return &peer{DataChannel: dataChannel, Connection: peerConnection, AudioPipline: gst.CreatePipeline("opus", []*webrtc.TrackLocalStaticSample{opusTrack}, gst_audio_pipline_str), VideoPipeline: gst.CreatePipeline("h264", []*webrtc.TrackLocalStaticSample{vp8Track}, gst_video_pipline_str)}, nil
+	return &peer{DataChannel: dataChannel, Connection: peerConnection, AudioPipline: gst.CreatePipeline("opus", []*webrtc.TrackLocalStaticSample{opusTrack}, gst_audio_pipline_str), VideoPipeline: gst.CreatePipeline("vp8", []*webrtc.TrackLocalStaticSample{vp8Track}, gst_video_pipline_str)}, nil
 }
 
 func onUserLeftRoom(peerID string) {
