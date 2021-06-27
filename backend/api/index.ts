@@ -20,6 +20,7 @@ import helmet from 'helmet';
 
 
 
+
 async function main() {
 	config(); // dot env config setup
 
@@ -56,8 +57,8 @@ async function main() {
 
 
 
-	const testAccount = await createTestAccount();
 
+	const testAccount = await createTestAccount();
 
 	const mail = createTransport({
 		host: "smtp.ethereal.email",
@@ -109,6 +110,25 @@ async function main() {
 	httpServer.listen(8080, () => {
 		console.log("Listening!")		
 	})
+
+
+
+	
+	function signalHandler(signal: any){
+		console.log(`*^!@4=> Received signal to terminate: ${signal}`)
+
+		prisma.$disconnect();
+
+		httpServer.close()
+
+		server.stop()
+
+	}
+
+
+	process.on("SIGINT", signalHandler)
+	process.on("SIGTERM", signalHandler)
+
 }
 
 main();
