@@ -7,7 +7,7 @@
                 </ul>
             </div>
         
-            <video  autoplay loop muted [volume]="0" #player></video> 
+            <video (mousemove)="onMouseMove($event)" (mousedown)="onMouseDown()"  autoplay loop muted [volume]="0" #player></video> 
         </div>
         <div class="room-users" *ngIf="room">
             <ul class="user-list">
