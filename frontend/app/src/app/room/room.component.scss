@@ -23,8 +23,7 @@
   video {
     position: absolute;
     max-width: 100%;
-    height: 100%;
-    width: 100%;
+
   }
 }
 
@@ -184,3 +183,39 @@
   flex-direction: column;
   justify-content: space-between;
 }
+
+
+.avatar{
+  img{
+    border-radius: 50%;
+    height: 45px;
+  }
+}
+
+.message-chat{
+  display: flex;
+}
+
+.messsage-content{
+  display: flex;
+  flex-direction: column;
+  margin-left: 10px;
+  margin-top: 5px;
+
+
+  .head{
+   
+    font-size: 12px;
+    width: 140px;
+    color: gray;
+    display: flex;
+    justify-content: space-between;
+  }
+
+}
+
+.message-event{
+  color: gray;
+  margin: 5px;
+}
+

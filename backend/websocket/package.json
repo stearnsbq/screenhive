@@ -5,9 +5,13 @@
   "main": "index.js",
   "dependencies": {
     "@prisma/client": "^2.21.2",
+    "@socket.io/redis-adapter": "^7.0.0",
     "@types/jsonwebtoken": "^8.5.1",
     "@types/node": "^15.0.1",
+    "@types/redis": "^2.8.29",
+    "@types/redlock": "^4.0.1",
     "@types/socket.io": "^2.1.13",
+    "@types/socket.io-redis": "^3.0.0",
     "@types/uuid": "^8.3.0",
     "argon2": "^0.27.2",
     "async-mutex": "^0.3.1",
@@ -15,24 +19,28 @@
     "jsonwebtoken": "^8.5.1",
     "nanoid": "^3.1.23",
     "nodemon": "^2.0.7",
+    "redis": "^3.1.2",
+    "redlock": "^4.2.0",
     "reflect-metadata": "^0.1.13",
     "sanitize-html": "^2.4.0",
     "socket-controllers": "0.0.5",
     "socket.io": "^4.0.1",
     "ts-node": "^9.1.1",
+    "typedi": "^0.10.0",
     "typegraphql-prisma": "^0.14.0",
     "typescript": "^4.2.4",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@types/sanitize-html": "^2.3.1",
-    "prisma": "^2.21.2"
+    "prisma": "^2.21.2",
+    "ts-node-dev": "^1.1.6"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npm run build:live",
     "build": "tsc -p .",
-    "build:live": "nodemon --watch './**/*.ts' --exec \"ts-node\" index.ts"
+    "build:live": "ts-node-dev index.ts"
   },
   "author": "",
   "license": "ISC"

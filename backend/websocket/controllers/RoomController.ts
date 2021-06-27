@@ -1,362 +1,415 @@
-import { Prisma, PrismaClient } from '@prisma/client'
+import 'reflect-metadata';
 import {
-  OnConnect,
-  SocketController,
-  ConnectedSocket,
-  OnDisconnect,
-  MessageBody,
-  OnMessage,
-  SocketIO,
-} from 'socket-controllers'
-import { v4 as uuidv4 } from 'uuid'
-import argon2 from 'argon2'
-import { Mutex } from 'async-mutex'
-import { nanoid } from 'nanoid'
+	OnConnect,
+	SocketController,
+	ConnectedSocket,
+	OnDisconnect,
+	MessageBody,
+	OnMessage,
+	SocketIO
+} from 'socket-controllers';
+import argon2 from 'argon2';
+import { nanoid } from 'nanoid';
 import sanitizeHtml from 'sanitize-html';
+import { RedisService } from '../services/redis';
+import { Service } from 'typedi';
 
 export interface Room {
-  id: string
-  name: string
-  owner: string,
-  users: Map<string, any>
-  streamer?: any
-  isPrivate: boolean
-  messages: { user: string; timestamp: number; message: string }[]
-  password?: string
-  thumbnail?: string
-  timeout?: any
+	name: string;
+	isPrivate: boolean;
+	password?: string;
+	users: string[];
+	streamer?: string;
+	thumbnail?: string;
 }
 
+@Service()
 @SocketController()
 export class RoomController {
-  private rooms: Map<string, Room>
-  private roomsMutex: Mutex
+	constructor(private redisService: RedisService) {}
 
-  constructor() {
-    this.rooms = new Map()
-    this.roomsMutex = new Mutex()
-  }
+	@OnMessage('is-room-private')
+	async onGetRoom(
+		@ConnectedSocket() socket: any,
+		@SocketIO() io: any,
+		@MessageBody() { roomID }: { roomID: string }
+	) {
+		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
-  @OnMessage('is-room-private')
-  async onGetRoom(
-    @ConnectedSocket() socket: any,
-    @SocketIO() io: any,
-    @MessageBody() { roomID }: { roomID: string },
-  ) {
-    try {
-      await this.roomsMutex.runExclusive(async () => {
-        if (!this.rooms.has(roomID)) {
-          return socket.emit('error', { err: 'Room does not exist!' })
-        }
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room Does Not Exist' });
+			}
 
-        const room = this.rooms.get(roomID) as Room
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
 
-        socket.emit('is-room-private-success', { isPrivate: room.isPrivate })
-      })
-    } catch (err) {
-      socket.emit('error', { err })
-    }
-  }
+			await lock.unlock();
+			socket.emit('is-room-private-success', { isPrivate: room.isPrivate });
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
 
-  @OnMessage('get-rooms')
-  async onGetRooms(
-    @ConnectedSocket() socket: any,
-    @SocketIO() io: any,
-    @MessageBody()
-    {
-      page = 1,
-      limit = 16,
-      query = '',
-    }: { page: number; limit: number; query?: string },
-  ) {
-    try {
-      await this.roomsMutex.runExclusive(async () => {
-        const rooms = Array.from(this.rooms.values()).filter((room) => {
-          return query.length > 0 ? room.name.includes(query) : true
-        })
+	@OnMessage('get-rooms')
+	async onGetRooms(
+		@ConnectedSocket() socket: any,
+		@SocketIO() io: any,
+		@MessageBody() { page = 1, limit = 16, query = '' }: { page: number; limit: number; query?: string }
+	) {
+		try {
+			const rooms = Object.entries(await this.redisService.asyncGetAll('rooms')).map(([ id, obj ]) => {
+				return { id, ...JSON.parse(obj as string) };
+			});
 
-        socket.emit('rooms', {
-          rooms: rooms
-            .slice((page - 1) * limit, page * limit)
-            .map(({ id, name, users, isPrivate, thumbnail }) => ({
-              id,
-              name,
-              users: isPrivate ? [] : Array.from(users.keys()),
-              isPrivate,
-              thumbnail: isPrivate ? '' : thumbnail,
-            })),
-          total: rooms.length,
-        })
-      })
-    } catch (err) {
-      socket.emit('error', { err })
-    }
-  }
+			socket.emit('rooms', {
+				rooms: rooms
+					.filter((room) => (query.length > 0 ? room.name.includes(query) : true))
+					.slice((page - 1) * limit, page * limit)
+					.map(({ id, name, users, isPrivate, thumbnail }) => ({
+						id,
+						name,
+						users: isPrivate ? [] : Array.from(users.keys()),
+						isPrivate,
+						thumbnail: (isPrivate ? '' : thumbnail) || ''
+					})),
+				total: rooms.length
+			});
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
 
-  @OnMessage('create-room')
-  async onCreateRoom(
-    @ConnectedSocket() socket: any,
-    @MessageBody()
-    {
-      name,
-      password,
-      isPrivate,
-    }: { name: string; password?: string; isPrivate: boolean },
-  ) {
-    try {
-      const roomID = nanoid()
+	@OnMessage('create-room')
+	async onCreateRoom(
+		@ConnectedSocket() socket: any,
+		@MessageBody() { name, password, isPrivate }: { name: string; password?: string; isPrivate: boolean }
+	) {
+		try {
+			const roomID = nanoid();
 
-      if (isPrivate && !password) {
-        return socket.emit('error', {
-          err: 'Private rooms require a password!',
-        })
-      }
+			if (isPrivate && !password) {
+				return socket.emit('error', {
+					err: 'Private rooms require a password!'
+				});
+			}
 
-      await this.roomsMutex.runExclusive(async () => {
-        this.rooms.set(roomID, {
-          id: roomID,
-		  owner: socket.user.username,
-          name,
-          isPrivate,
-          password: password ? await argon2.hash(password) : undefined,
-          users: new Map(),
-          messages: [],
-        })
-      })
+			await this.redisService.asyncHSet(
+				'rooms',
+				roomID,
+				JSON.stringify({
+					name,
+					isPrivate,
+					password: isPrivate && password ? await argon2.hash(password) : undefined,
+					users: [],
+					thumbnail: '',
+					streamer: undefined
+				})
+			);
 
-      socket.emit('room-creation-success', { roomID })
-    } catch (err) {
-      socket.emit('error', { err })
-    }
-  }
+			socket.join(roomID);
 
-  @OnMessage('leave-room')
-  async onLeaveRoom(
-    @ConnectedSocket() socket: any,
-    @MessageBody() { roomID }: { roomID: string },
-  ) {
-    try {
-      await this.roomsMutex.runExclusive(async () => {
-        if (!this.rooms.has(roomID)) {
-          return socket.emit('error', { err: 'Room Does Not Exist' })
-        }
+			return socket.emit('room-creation-success', { roomID });
+		} catch (err) {
+			console.log(err);
+			socket.emit('error', { err });
+		}
+	}
 
-        const room = (await this.rooms.get(roomID)) as Room
+	@OnMessage('leave-room')
+	async onLeaveRoom(@ConnectedSocket() socket: any, @MessageBody() { roomID }: { roomID: string }) {
+		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
-        const { username } = socket.user
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room Does Not Exist' });
+			}
 
-        if (!room.users.has(username)) {
-          return socket.emit('error', { err: 'User is not in the room!' })
-        }
+			const { username } = socket.user;
 
-        if (!room.users.delete(username)) {
-          return socket.emit('error', {
-            err: 'Failed to remove user from room!',
-          })
-        }
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
 
-        room.users.forEach((socket, user) => {
-          socket.emit('user-left-room', { user: username })
-        })
+			const idx = room.users.indexOf(username);
 
-		/*
+			if (idx === -1) {
+				return socket.emit('error', { err: 'User is not in the room!' });
+			}
 
-			Handling users leaving the room 
+			room.users.splice(idx, 1);
 
-			Case 1: All users leave the room
-				Result: Set a timer for 10 seconds and if a person joins again stop the timer otherwise just delete the room and notify to shutdown streamer
-			Case 2: A user joins before the timer expires
-				Result: Stop the timer and keep the room open
-			Case 3: Owner closes the room
-				Result: kick everyone out, delete the room and notify the streamer
+			socket.to(roomID).emit('user-left-room', { user: username });
 
-		*/
+			await this.redisService.asyncDel(`${username}-room`);
 
+			await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
 
-		if(room.users.size <= 0){
+			if (room.users.length <= 0) {
+				await this.redisService.asyncSetEx(`rooms:${roomID}-expiry`, roomID, 10);
 
-			room.timeout = setTimeout(() => {
+				const roomRemove = setInterval(async () => {
+					if (!await this.redisService.asyncExists(`rooms:${roomID}-expiry`)) {
+						await this.redisService.asyncHDel('rooms', roomID);
+						clearInterval(roomRemove);
+					}
+				}, 10000);
+			}
 
-				this.rooms.delete(roomID)
+			await lock.unlock();
 
-			}, 10000)
+			socket.emit('room-left-success', { roomID });
+		} catch (err) {
+			console.log(err);
+			socket.emit('error', { err });
+		}
+	}
 
+	@OnMessage('streamer-join')
+	async onStreamerJoin(@SocketIO() io: any, @ConnectedSocket() socket: any, @MessageBody() { streamer, roomID }: any) {
+		if (!socket.streamer || (socket.streamer && socket.streamer.roomID !== roomID)) {
+			socket.emit('error', { err: 'Unauthorized' });
 		}
 
+		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
-      })
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room Does Not Exist' });
+			}
 
-      socket.emit('room-left-success', { roomID })
-    } catch (err) {
-      socket.emit('error', { err })
-    }
-  }
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
 
-  @OnMessage('join-room')
-  async onJoinRoom(
-    @ConnectedSocket() socket: any,
-    @MessageBody() { roomID, password }: { roomID: string; password?: string },
-  ) {
-    try {
-      const user = socket.user
+			room.streamer = socket.id;
 
-      await this.roomsMutex.runExclusive(async () => {
-        if (!this.rooms.has(roomID)) {
-          return socket.emit('error', { err: 'Room Does Not Exist' })
-        }
+			await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
 
-        const room = this.rooms.get(roomID) as Room
+			await lock.unlock();
 
-        if (room.users.size >= parseInt(process.env.MAX_ROOM_SIZE || '25')) {
-          return socket.emit('error', {
-            err: 'Room is Full!',
-          })
-        }
+			const peers = await io.in(roomID).allSockets();
 
-        if (room.isPrivate && !password) {
-          return socket.emit('error', {
-            err: 'Private rooms require a password!',
-          })
-        }
+			console.log([...peers])
+			socket.emit('streamer-join-success', { peers:  [...peers]});
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
 
-        if (
-          room.isPrivate &&
-          !(await argon2.verify(room.password as string, password as string))
-        ) {
-          return socket.emit('error', { err: 'Invalid Password!' })
-        }
+	@OnMessage('join-room')
+	async onJoinRoom(
+		@ConnectedSocket() socket: any,
+		@MessageBody() { roomID, password }: { roomID: string; password?: string }
+	) {
+		try {
+			const user = socket.user;
 
-		if(room.timeout){
-			clearTimeout(room.timeout);
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room Does Not Exist' });
+			}
+
+			if (await this.redisService.asyncExists(`rooms:${roomID}-expiry`)) {
+				await this.redisService.asyncSet(`rooms:${roomID}-expiry`, roomID);
+			}
+
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
+
+			if (room.isPrivate && !password) {
+				return socket.emit('error', {
+					err: 'Private rooms require a password!'
+				});
+			}
+
+			if (room.isPrivate && !await argon2.verify(room.password as string, password as string)) {
+				return socket.emit('error', { err: 'Invalid Password!' });
+			}
+
+			socket.join(roomID);
+
+			await this.redisService.asyncSet(`${user.username}-room`, roomID); // to speed up when user leaves a room
+
+			room.users.push(user.username);
+
+			await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
+
+			await lock.unlock();
+
+			socket.to(roomID).emit('user-join-room', { username: user.username });
+
+			socket.to(room.streamer).emit('user-join-room', { peer: socket.id });
+
+			socket.emit('room-join-success', {
+				roomID,
+				name: room.name,
+				users: room.users.filter((usr) => usr !== user.username)
+			});
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
+
+	@OnMessage('send-emote')
+	async onSendEmote(
+		@ConnectedSocket() socket: any,
+		@MessageBody() { roomID, emote }: { roomID: string; emote: string }
+	) {}
+
+	@OnMessage('send-chat')
+	async onSendChat(
+		@ConnectedSocket() socket: any,
+		@MessageBody() { roomID, message }: { roomID: string; message: string }
+	) {
+		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
+
+			const user = socket.user;
+
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
+
+			if (!room.users.includes(user.username)) {
+				return socket.emit('error', { err: 'User is not in the room!' });
+			}
+
+			await lock.unlock();
+
+			socket.to(roomID).emit('chat', {
+				user: user.username,
+				timestamp: Date.now(),
+				message: sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} })
+			});
+
+			socket.emit('chat-sent-success');
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
+
+	@OnMessage('video-offer')
+	async onVideoOffer(@ConnectedSocket() socket: any, @MessageBody() { roomID, peer, sdp }: any) {
+		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
+
+
+			peer ? socket.to(peer).emit('video-offer', { sdp }) : socket.to(roomID).emit('video-offer', { sdp });
+
+			await lock.unlock();
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
+
+	@OnMessage('video-answer')
+	async onVideoAnswer(@ConnectedSocket() socket: any, @MessageBody() { roomID,  sdp }: any) {
+		try {
+			const { username } = socket.user;
+
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
+
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
+
+			if (!room.users.includes(username)) {
+				return socket.emit('error', { err: 'User is not in the room!' });
+			}
+
+			socket.to(room.streamer).emit('video-answer', { peer: socket.id, sdp });
+
+			await lock.unlock();
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
+
+	@OnMessage('user-ice-candidate')
+	async onUserIceCandidate(@ConnectedSocket() socket: any, @MessageBody() { roomID, candidate }: any) {
+		try {
+			const { username } = socket.user;
+
+			console.log(roomID, candidate)
+
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
+
+			const room = JSON.parse((await this.redisService.asyncHGet('rooms', roomID)) as string) as Room;
+
+			if (!room.users.includes(username)) {
+				return socket.emit('error', { err: 'User is not in the room!' });
+			}
+
+			socket.to(room.streamer).emit('user-ice-candidate', { peer: socket.id, candidate });
+
+			await lock.unlock();
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
+
+	@OnMessage('streamer-ice-candidate')
+	async onStreamerIceCandidate(@ConnectedSocket() socket: any, @MessageBody() { roomID, peer, candidate }: any) {
+		try {
+			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+			if (!await this.redisService.asyncHExists('rooms', roomID)) {
+				return socket.emit('error', { err: 'Room does not exist!' });
+			}
+
+			socket.to(peer).emit('streamer-ice-candidate', { candidate });
+
+			await lock.unlock();
+		} catch (err) {
+			socket.emit('error', { err });
+		}
+	}
+
+	@OnConnect()
+	connection(@ConnectedSocket() socket: any) {
+		console.log('Client Connected');
+	}
+
+	@OnDisconnect()
+	async disconnect(@ConnectedSocket() socket: any) {
+		if (socket.user) {
+			const { username } = socket.user;
+
+			const key = `${username}-room`;
+
+			if (await this.redisService.asyncExists(key)) {
+				const roomID = (await this.redisService.asyncGet(key)) as string;
+
+				const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
+
+				if (await this.redisService.asyncHExists('rooms', roomID as string)) {
+					const room = JSON.parse(await this.redisService.asyncHGet('rooms', roomID)) as Room;
+
+					const idx = room.users.indexOf(username);
+
+					if (idx !== -1) {
+						room.users.splice(room.users.indexOf(username), 1);
+
+						await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
+
+						await this.redisService.asyncDel(key);
+
+						socket.to(roomID).emit('user-left-room', { user: username });
+					}
+				}
+
+				await lock.unlock();
+			}
 		}
 
-        room.users.forEach((socket, username) => {
-          socket.emit('user-join-room', { username })
-        })
-
-        room.users.set(user.username, socket)
-
-        socket.emit('room-join-success', {
-          roomID,
-		  name: room.name,
-          messages: [],
-          users: [...room.users.keys()].filter((usr) => usr !== user.username),
-        })
-      })
-    } catch (err) {
-      socket.emit('error', { err })
-    }
-  }
-
-  @OnMessage('send-emote')
-  async onSendEmote(
-    @ConnectedSocket() socket: any,
-    @MessageBody() { roomID, emote }: { roomID: string; emote: string },
-  ) {}
-
-  @OnMessage('send-chat')
-  async onSendChat(
-    @ConnectedSocket() socket: any,
-    @MessageBody() { roomID, message }: { roomID: string; message: string },
-  ) {
-    try {
-      await this.roomsMutex.runExclusive(() => {
-
-        if (!this.rooms.has(roomID)) {
-          return socket.emit('error', { err: 'Room does not exist!' })
-        }
-
-        const user = socket.user
-
-        const room = this.rooms.get(roomID) as Room
-
-        if (!room.users.has(user.username)) {
-          return socket.emit('error', { err: 'User is not in the room!' })
-        }
-
-	
-        const newMessage = {
-          user: user.username,
-          timestamp: Date.now(),
-          message: sanitizeHtml(message, {allowedTags: [], allowedAttributes: {}}),
-        }
-
-        room.messages.push(newMessage)
-
-        room.users.forEach((socket, username) => {
-          socket.emit('chat', newMessage)
-        })
-      })
-
-      socket.emit('chat-sent-success')
-    } catch (err) {
-      socket.emit('error', { err })
-    }
-  }
-
-  @OnMessage('streamer-join')
-  onStreamerJoin(
-    @ConnectedSocket() socket: any,
-    @MessageBody() { roomID, sdp }: { roomID: string; sdp: string },
-  ) {
-    try {
-      if (!socket.streamer) {
-        return socket.emit('error', { err: 'You are not a streamer!' })
-      }
-
-      this.roomsMutex.runExclusive(() => {
-        if (!this.rooms.has(roomID)) {
-          return socket.emit('error', { err: 'Room does not exist!' })
-        }
-
-        const streamer = socket.streamer
-
-        const room = this.rooms.get(roomID) as Room
-
-        room.streamer = { streamer, socket }
-
-        room.users.forEach((socket, username) => {
-          socket.emit('video-offer', { sdp })
-        })
-      })
-
-      socket.emit('video-offers-success')
-    } catch (err) {
-      socket.emit('error', { err })
-    }
-  }
-
-  @OnMessage('video-answer')
-  public onVideoAnswer(
-    @ConnectedSocket() socket: any,
-    @MessageBody() { roomID, sdp }: { roomID: string; sdp: string },
-  ) {
-    try {
-      this.roomsMutex.runExclusive(() => {
-        if (!this.rooms.has(roomID)) {
-          return socket.emit('error', { err: 'Room does not exist!' })
-        }
-
-        const user = socket.user
-
-        const { streamer } = this.rooms.get(roomID) as Room
-
-        streamer.socket.emit('video-answer', { peer: user.username, sdp })
-      })
-
-      socket.emit('video-answer-success')
-    } catch (err) {
-      socket.emit('error', { err })
-    }
-  }
-
-  @OnConnect()
-  connection(@ConnectedSocket() socket: any) {
-    console.log('client connected')
-  }
-
-  @OnDisconnect()
-  disconnect(@ConnectedSocket() socket: any) {
-    console.log('client disconnected')
-  }
+		console.log('Client Disconnected');
+	}
 }

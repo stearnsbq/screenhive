@@ -7,7 +7,7 @@
                 </ul>
             </div>
         
-            <video  autoplay loop muted [volume]="0" #player></video> 
+            <video (mousemove)="onMouseMove($event)" (mousedown)="onMouseDown()"  autoplay loop muted [volume]="0" #player></video> 
         </div>
         <div class="room-users" *ngIf="room">
             <ul class="user-list">
@@ -15,7 +15,7 @@
                     <img src="https://via.placeholder.com/35" />
                 </li>
                 <li class="user-list-divider"></li>
-                <li *ngFor="let user of room.users"></li>
+                <li *ngFor="let user of room.users">{{user}}</li>
             </ul>
         </div>
         <div class="video-controls">
@@ -34,12 +34,28 @@
             <li *ngFor="let message of room.messages">
                 <ng-container [ngSwitch]="message.type">
 
-                    <div class="message-chat" *ngSwitchCase="1">
-                        <span>{{message.user}}: </span>
-                        <span>{{message.message}}</span>
+                    <div class="message-chat" *ngSwitchCase="MessageType.Chat">
+                        <div class="avatar">
+                            <img src="https://via.placeholder.com/50x50" />
+                        </div>
+                        <div class="messsage-content">
+                            <div class="head">
+                                <span>{{message.user}}</span>
+                                <span>{{message.timestamp | date: 'MMM d, h:mm a'}}</span>
+                            </div>
+                            <div class="body">
+                                <span>{{message.message}}</span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="message-event" *ngSwitchCase="MessageType.YouJoined">
+                        <span>You Joined</span>
                     </div>
                     
-                    <div class="message-event" *ngSwitchCase="2">
+                    <div class="message-event" *ngSwitchCase="MessageType.UserJoined">
                         <span>{{message.message}}</span>
                     </div>
 

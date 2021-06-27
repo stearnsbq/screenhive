@@ -8,7 +8,7 @@
     </div>
     <div class="rooms">
         <div class="rooms-header">
-            <h1>Public Rooms</h1>
+            <h1>Rooms</h1>
             <img (click)="creationDialog.open()" src="/assets/icons/create-room.svg">
         </div>
         <div class="divider"></div>
@@ -19,9 +19,18 @@
                 <div class="rooms-grid">
 
                     <div *ngFor="let room of rooms; let i = index" class="rooms-grid-item" (click)="joinRoom(room)">
-                        <img [src]="room.thumbnail || 'https://via.placeholder.com/250x125'" />
+                        <ng-container *ngIf="!room.isPrivate else privateRoom">
+                            <img class="thumbnail" [src]="room.thumbnail || 'https://via.placeholder.com/250x125'" />
+                        </ng-container>
+
+                        <ng-template #privateRoom>
+                            <div class="private-room">
+                                <img src="/assets/icons/lock.svg">
+                            </div>
+                        </ng-template>
+                        
                         <div class="grid-item-footer" [style.background]="i % 2 == 0 ? '#FF8200': '#4EA699'">
-                            <span class="room-name">{{room.name}} {{room.isPrivate}}</span>
+                            <span class="room-name">{{room.name}}</span>
                             <div class="footer-users">
                                 <img src="/assets/icons/user.svg" />
                                 <span>{{room.users.length}}/20</span>

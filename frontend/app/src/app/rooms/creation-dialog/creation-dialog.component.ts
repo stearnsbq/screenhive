@@ -3,6 +3,7 @@ import { Component, EventEmitter, HostListener, OnInit, Output } from '@angular/
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LoggingService } from 'src/app/logging.service';
+import { StorageService } from 'src/app/storage.service';
 import { WebsocketService } from 'src/app/websocket.service';
 
 @Component({
@@ -17,7 +18,7 @@ export class CreationDialogComponent implements OnInit {
 
 
 
-  constructor(private formBuilder: FormBuilder, private websocketService: WebsocketService, private router: Router, private logging: LoggingService) { 
+  constructor(private formBuilder: FormBuilder, private websocketService: WebsocketService, private router: Router, private logging: LoggingService, private storage: StorageService) { 
     this.isOpen = false;
     this.isPrivate = false;
     this.creationGroup = this.formBuilder.group({
@@ -47,6 +48,9 @@ export class CreationDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
+
+
+
   }
 
   @HostListener('document:keydown.escape', ['$event'])
@@ -64,10 +68,16 @@ export class CreationDialogComponent implements OnInit {
     const name = controls['name'].value;
     const password = controls['password'].value;
 
-    this.websocketService.createRoom(name, password).then(({roomID}) => {
-        this.router.navigate(['/room', roomID], {state: {name, password} })
-    }, (err) => {
-        this.logging.error(err);
+    this.websocketService.createRoom(name, password);
+
+    this.websocketService.listenToEventOnce('room-creation-success').then(({roomID}) => {
+      this.storage.setItem("roomPassword", password)
+
+      this.router.navigate(['/room', roomID])
+    })
+
+    this.websocketService.listenToEventOnce('error').then((err) => {
+      this.logging.error(JSON.stringify(err));
     })
 
   }

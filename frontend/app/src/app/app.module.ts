@@ -61,7 +61,7 @@ export function createApollo(httpLink: HttpLink, cookies: CookieService, storage
     FormsModule,
     ReactiveFormsModule,
     CookieModule.forRoot(),
-    SocketIoModule.forRoot({ url: environment.socket + "?token=" + localStorage.getItem("access_token"), options: {} })
+    SocketIoModule.forRoot({ url: environment.socket + "?token=" + localStorage.getItem("access_token"), options: {transports: ['websocket'], upgrade: false} })
   ],
   providers: [
     {

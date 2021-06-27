@@ -1,3 +1,4 @@
 ormconfig.json
 .env
 **/prisma/migrations
+dist

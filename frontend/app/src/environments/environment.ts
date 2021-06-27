@@ -6,7 +6,8 @@ export const environment = {
   production: false,
   api: '/graphql',
   csrf: '/csrf',
-  socket: 'ws://localhost:3000'
+  socket: 'ws://localhost:3000',
+  ice_server: 'stun:stun.l.google.com:19302'
 };
 
 /*

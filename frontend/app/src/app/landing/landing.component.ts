@@ -9,7 +9,7 @@ export class LandingComponent implements OnInit {
 	public mode: string;
   
   constructor() { 
-    this.mode = 'register';
+    this.mode = 'login';
   }
 
   ngOnInit(): void {

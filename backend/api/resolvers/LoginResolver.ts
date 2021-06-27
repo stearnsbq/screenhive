@@ -5,6 +5,8 @@ import { Service } from 'typedi';
 import { Role } from '../enum/Role';
 import { Response } from 'express';
 import { Prisma, PrismaClient, User } from '.prisma/client';
+import { Transporter } from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 
 
@@ -63,6 +65,8 @@ export class LoginResolver {
 				}
 			});
 
+			console.log(password)
+
 			if (user && (await argon2.verify(user.password, password))) {
 				res.cookie(
 					'refresh_token',
@@ -93,6 +97,7 @@ export class LoginResolver {
 
 			throw new Error();
 		} catch (err) {
+			console.log(err)
 			res.status(401);
 			throw new Error('Invalid Username or Password');
 		}
@@ -166,14 +171,27 @@ export class LoginResolver {
 
 
 	@Query(() => Boolean)
-	async resetPasswordRequest(@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient },  @Arg("email") email: string){
+	async resetPasswordRequest(@Ctx() { res, prisma, mail }: { res: Response, prisma: PrismaClient, mail: Transporter<SMTPTransport.SentMessageInfo> },  @Arg("email") email: string){
 	
 			if((await prisma.user.count({where: {email}})) > 0){
 
-				const token = jsonwebtoken.sign({email}, process.env.JWT_SECRET as string);
+				const token = jsonwebtoken.sign({email}, process.env.JWT_SECRET as string, {expiresIn: '1hr'});
 
-
-				// send reset password email here!
+				await mail.sendMail({
+					from: '"Screenhive No Reply" no-reply@screenhive.io',
+					to: email,
+					subject: "Reset Password Request",
+					html:`
+						  <p>
+							To Reset Your Password
+							<a href="https://screenhive.io/passwordreset?=${token}">Click Here!</a>
+							Expires in 1hr
+						  </p>
+						  <p>
+							  If that link doesn't work click here: https://screenhive.io/passwordreset?=${token}
+						  </p>
+						`
+				})
 
 
 			}

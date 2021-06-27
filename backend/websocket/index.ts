@@ -1,32 +1,20 @@
 import 'reflect-metadata'
-import { useSocketServer } from 'socket-controllers';
+import { useContainer, useSocketServer } from 'socket-controllers';
 import { RoomController } from './controllers/RoomController';
-import jsonwebtoken from 'jsonwebtoken';
+
 import { config } from 'dotenv';
+import { createAdapter } from 'socket.io-redis';
+import Container from 'typedi';
+import { SioService } from './services/sio';
 
 config();
 
-const io = require("socket.io")(3000, {cors:{
-    origin: "*"
-}});
+
+useContainer(Container)
+
+const ioService = Container.get(SioService)
 
 
-io.use((socket: any, next: any) => {
-    
-    if(socket.handshake.query && socket.handshake.query.token){
-        
-        jsonwebtoken.verify(socket.handshake.query.token, process.env.JWT_SECRET as string, (err: any, decoded: any) => {
-            if(err) return next(new Error("UnAuthorized"))
-            socket.user = decoded;
-            next();
-        })
-        
-    }else{
-        next(new Error("Unauthorized"))
-        socket.disconnect();
-    }
-})
-
-useSocketServer(io, {controllers: [RoomController]})
+useSocketServer(ioService.io, {controllers: [RoomController]})
 
 

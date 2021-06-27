@@ -25,6 +25,7 @@ export class AuthService {
   }
 
   public async isLoggedIn() {
+
     if (!this.jwtHelper.isTokenExpired(this.storage.getItem('access_token'))) {
       this.loggedIn = true;
       return this.loggedIn;
@@ -145,4 +146,24 @@ export class AuthService {
       query,
     });
   }
+
+
+  public forgotPassword(email: string, captcha: string){
+
+    const query = gql`
+    query resetPasswordRequest($email: String!, $captcha: String!){
+      resetPasswordRequest(email: $email, captcha: $captcha)
+    }
+    `
+
+    return this.apollo.query({
+      query,
+      variables:{
+        email,
+        captcha
+      }
+    })
+
+  }
+
 }
