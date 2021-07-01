@@ -272,22 +272,26 @@ func createPeerConnection() (*peer, error) {
 		return nil, err
 	}
 
-	dataChannel, err := peerConnection.CreateDataChannel("remote", nil)
+	// dataChannel, err := peerConnection.CreateDataChannel("remote", nil)
 
-	if err != nil {
-		log.Println("Failed to create data channel")
-		return nil, err
-	}
+	// if err != nil {
+	// 	log.Println("Failed to create data channel")
+	// 	return nil, err
+	// }
 
 
-	dataChannel.OnMessage(onDataChannelMessage)
-	dataChannel.OnOpen(onDataChannelOpen)
-	dataChannel.OnClose(onDataChannelClose)
-	dataChannel.OnError(onDataChannelError)
+	// dataChannel.OnMessage(onDataChannelMessage)
+	// dataChannel.OnOpen(onDataChannelOpen)
+	// dataChannel.OnClose(onDataChannelClose)
+	// dataChannel.OnError(onDataChannelError)
+
+	peerConnection.OnDataChannel(onDataChannel)
 
 	peerConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
 		log.Printf("Connection State has changed %s \n", connectionState.String())
 	})
+
+
 
 	opusTrack, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "audio/opus"}, "audio", "pion1")
 
@@ -384,6 +388,20 @@ func onUserJoinRoom(peerID string) ([]byte, error) {
 	serialized, _ := json.Marshal(event{Event: "video-offer", Data: data})
 	return serialized, nil
 }
+
+func onDataChannel(channel *webrtc.DataChannel){
+
+	fmt.Printf("New DataChannel %s %d\n", d.Label(), d.ID())
+
+
+
+	channel.OnMessage(onDataChannelMessage)
+	channel.OnOpen(onDataChannelOpen)
+	channel.OnClose(onDataChannelClose)
+	channel.OnError(onDataChannelError)
+
+}
+
 
 
 func initMap(){

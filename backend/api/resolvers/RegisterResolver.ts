@@ -73,7 +73,6 @@ export class RegisterResolver {
 				{ expiresIn: '5hr' }
 			);
 
-
 			await mail.sendMail({
 				from: '"Screenhive No Reply" no-reply@screenhive.io',
 				to: email,
@@ -88,8 +87,6 @@ export class RegisterResolver {
 					  </p>
 				    `
 			})
-
-
 
 			return !!newUser;
 		} catch (err) {
