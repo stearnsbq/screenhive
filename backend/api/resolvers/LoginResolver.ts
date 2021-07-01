@@ -66,8 +66,6 @@ export class LoginResolver {
 				}
 			});
 
-			console.log(password);
-
 			if (user && (await argon2.verify(user.password, password))) {
 				res.cookie(
 					'refresh_token',
@@ -102,7 +100,6 @@ export class LoginResolver {
 
 			throw new Error();
 		} catch (err) {
-			console.log(err);
 			res.status(401);
 			throw new Error('Invalid Username or Password');
 		}
