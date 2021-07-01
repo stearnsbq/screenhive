@@ -8,13 +8,10 @@ import { Prisma, PrismaClient, User } from '.prisma/client';
 import { Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
-
-
 @Service()
 @Resolver()
 export class LoginResolver {
 	constructor() {}
-
 
 	@Query(() => String)
 	async refreshToken(@Ctx() { cookies, res, prisma }: { cookies: any; res: Response; prisma: PrismaClient }) {
@@ -29,20 +26,24 @@ export class LoginResolver {
 				id: number;
 			};
 
-			const user = await prisma.user.findUnique({
+			const user = (await prisma.user.findUnique({
 				where: {
 					id: refresh_token.id
 				},
-				include:{
+				include: {
 					roles: true
 				}
-			}) as any;
+			})) as any;
 
-			return jsonwebtoken.sign({ id: user.id, username: user.username, roles: user.roles }, process.env.JWT_SECRET as string, {
-				expiresIn: '15m',
-				issuer: 'screenhive.io',
-				audience: 'screenhive_users'
-			});
+			return jsonwebtoken.sign(
+				{ id: user.id, username: user.username, roles: user.roles },
+				process.env.JWT_SECRET as string,
+				{
+					expiresIn: '15m',
+					issuer: 'screenhive.io',
+					audience: 'screenhive_users'
+				}
+			);
 		} catch (err) {
 			res.status(401);
 			throw new Error('Not Authenticated!');
@@ -60,12 +61,12 @@ export class LoginResolver {
 				where: {
 					username
 				},
-				include:{
+				include: {
 					roles: true
 				}
 			});
 
-			console.log(password)
+			console.log(password);
 
 			if (user && (await argon2.verify(user.password, password))) {
 				res.cookie(
@@ -76,7 +77,7 @@ export class LoginResolver {
 						audience: 'screenhive_users',
 						algorithm: 'HS256'
 					}),
-					{ maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: true, /*domain: ".screenhive.io",*/ sameSite: true  }
+					{ maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: true, /*domain: ".screenhive.io",*/ sameSite: true }
 				);
 
 				await prisma.user.update({
@@ -88,16 +89,20 @@ export class LoginResolver {
 					}
 				});
 
-				return jsonwebtoken.sign({ id: user.id, username: user.username, roles: user.roles }, process.env.JWT_SECRET as string, {
-					expiresIn: '15m',
-					issuer: 'screenhive.io',
-					audience: 'screenhive_users'
-				});
+				return jsonwebtoken.sign(
+					{ id: user.id, username: user.username, roles: user.roles },
+					process.env.JWT_SECRET as string,
+					{
+						expiresIn: '15m',
+						issuer: 'screenhive.io',
+						audience: 'screenhive_users'
+					}
+				);
 			}
 
 			throw new Error();
 		} catch (err) {
-			console.log(err)
+			console.log(err);
 			res.status(401);
 			throw new Error('Invalid Username or Password');
 		}
@@ -121,7 +126,7 @@ export class LoginResolver {
 			const token = cookies.refresh_token;
 			const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET as string) as any;
 
-			res.clearCookie("refresh_token");
+			res.clearCookie('refresh_token');
 
 			return (
 				decoded &&
@@ -138,50 +143,53 @@ export class LoginResolver {
 		}
 	}
 
-
 	@Query(() => Boolean)
-	async resetPassword(@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient },  @Arg("token") token: string, @Arg("newPassword") newPassword: string){
-
-		try{
-
-			if(!jsonwebtoken.verify(token, process.env.JWT_SECRET as string)){
-				throw new Error("Invalid Token!")
+	async resetPassword(
+		@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient },
+		@Arg('token') token: string,
+		@Arg('newPassword') newPassword: string
+	) {
+		try {
+			if (!jsonwebtoken.verify(token, process.env.JWT_SECRET as string)) {
+				throw new Error('Invalid Token!');
 			}
 
 			const decoded = jsonwebtoken.decode(token) as any;
-
 
 			await prisma.user.update({
 				where: {
 					email: decoded.email
 				},
-				data:{
+				data: {
 					password: await argon2.hash(newPassword)
 				}
-			})
-
+			});
 
 			return true;
-		}catch(err){
+		} catch (err) {
 			res.status(500);
-			throw new Error(err)
+			throw new Error(err);
 		}
-
 	}
 
-
 	@Query(() => Boolean)
-	async resetPasswordRequest(@Ctx() { res, prisma, mail }: { res: Response, prisma: PrismaClient, mail: Transporter<SMTPTransport.SentMessageInfo> },  @Arg("email") email: string){
-	
-			if((await prisma.user.count({where: {email}})) > 0){
+	async resetPasswordRequest(
+		@Ctx()
+		{
+			res,
+			prisma,
+			mail
+		}: { res: Response; prisma: PrismaClient; mail: Transporter<SMTPTransport.SentMessageInfo> },
+		@Arg('email') email: string
+	) {
+		if ((await prisma.user.count({ where: { email } })) > 0) {
+			const token = jsonwebtoken.sign({ email }, process.env.JWT_SECRET as string, { expiresIn: '1hr' });
 
-				const token = jsonwebtoken.sign({email}, process.env.JWT_SECRET as string, {expiresIn: '1hr'});
-
-				await mail.sendMail({
-					from: '"Screenhive No Reply" no-reply@screenhive.io',
-					to: email,
-					subject: "Reset Password Request",
-					html:`
+			await mail.sendMail({
+				from: '"Screenhive No Reply" no-reply@screenhive.io',
+				to: email,
+				subject: 'Reset Password Request',
+				html: `
 						  <p>
 							To Reset Your Password
 							<a href="https://screenhive.io/passwordreset?=${token}">Click Here!</a>
@@ -191,13 +199,9 @@ export class LoginResolver {
 							  If that link doesn't work click here: https://screenhive.io/passwordreset?=${token}
 						  </p>
 						`
-				})
+			});
+		}
 
-
-			}
-
-			return true;
+		return true;
 	}
-
-
 }
