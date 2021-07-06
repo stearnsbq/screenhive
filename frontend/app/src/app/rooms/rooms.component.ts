@@ -50,9 +50,10 @@ export class RoomsComponent implements OnInit {
     this.friends = [{name: "realfrogg", discriminator: 3312, avatar: "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/b6b7365f2b7ed236378a9c93753afc61~c5_720x720.jpeg?x-expires=1625173200&x-signature=bxAG%2F5isfKZZW40RACdpPbjKfSM%3D", presence: 0}]
   }
 
-  ngOnInit(){
+  async ngOnInit(){
 
     this.logging.debug("Retrieving Rooms")
+    await this.websocketService.connect()
     this.websocketService.getRooms(this.page, 16)
 
     this.websocketService.listenToEvent('rooms').subscribe(({rooms, total}) => {

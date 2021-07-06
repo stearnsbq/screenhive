@@ -1,17 +1,42 @@
 import { Injectable } from '@angular/core';
 import { Socket } from 'ngx-socket-io';
 import { fromEvent, combineLatest, merge, zip } from 'rxjs';
+import { environment } from 'src/environments/environment';
+import { AuthService } from './auth.service';
 import { LoggingService } from './logging.service';
+import { StorageService } from './storage.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class WebsocketService {
 
+	private socket : Socket
 
-	constructor(public socket: Socket, private logging: LoggingService) {
-		this.socket.on('connect_failed', this.onConnectError.bind(this));
-		this.socket.on('connect', this.onConnect.bind(this));
+	constructor(private auth: AuthService, private storage: StorageService, private logging: LoggingService) {
+	}
+
+	public async connect(){
+
+
+		if(await this.auth.isLoggedIn()){
+			this.socket = new Socket({
+				url: environment.socket,
+				options: {
+				  query: { token: this.storage.getItem("access_token") },
+				  transports: ['websocket'],
+				  upgrade: false,
+				},
+			  })
+	
+			
+			this.socket.on('connect_failed', this.onConnectError.bind(this));
+			this.socket.on('connect', this.onConnect.bind(this));
+		}else{
+			this.logging.error("Not logged in, cannot connect to the websocket server!")
+		}
+
+
 	}
 
 	private onConnect() {
@@ -30,10 +55,8 @@ export class WebsocketService {
 		this.socket.emit('user-ice-candidate', {peer, roomID, candidate});
 	}
 
-
 	public getRooms(page?: number, limit?: number, search?: string) {
 		this.socket.emit('get-rooms', { page, limit, search });
-		//return this.response('rooms');
 	}
 
 	public createRoom(name: string, password?: string) {
@@ -42,35 +65,27 @@ export class WebsocketService {
 			password,
 			isPrivate: !!password
 		});
-		//return this.response('room-creation-success');
 	}
 
 	public isRoomPrivate(roomID: string) {
 		this.socket.emit('is-room-private', { roomID });
-		//return this.response('is-room-private-success');
 	}
 
 	public joinRoom(roomID: string, password?: string) {
 		this.socket.emit('join-room', { roomID, password });
-		
-		//return this.response('room-join-success');
 	}
 
 	public leaveRoom(roomID: string) {
 		this.socket.emit('leave-room', { roomID });
-		//return this.response('room-left-success');
 	}
 
 	public sendChat(roomID: string, message) {
 		this.socket.emit('send-chat', { roomID, message });
-		//return this.response('chat-sent-success');
 	}
-
 
 	public listenToEventOnce(event: string){
 		return this.socket.fromOneTimeEvent(event)
 	}
-
 
 	public listenToEvent(event: string){
 		return this.socket.fromEvent(event)
