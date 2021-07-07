@@ -52,14 +52,14 @@ export class LoginResolver {
 
 	@Mutation(() => String)
 	async login(
-		@Arg('username') username: string,
+		@Arg('email') email: string,
 		@Arg('password') password: string,
 		@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient }
 	) {
 		try {
 			const user = await prisma.user.findUnique({
 				where: {
-					username
+					email
 				},
 				include: {
 					roles: true
@@ -80,7 +80,7 @@ export class LoginResolver {
 
 				await prisma.user.update({
 					where: {
-						username
+						email
 					},
 					data: {
 						lastLogin: new Date()

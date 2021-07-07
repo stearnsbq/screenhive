@@ -1,0 +1,22 @@
+<ng-container *ngIf="isOpen">
+    <div class="dialog-container">
+        <div class="dialog">
+            <div class="header">
+                <h1>Add New Friend!</h1>
+                <button (click)="close()">X</button>
+            </div>
+            <div class="sub-header">
+                <p>Names are case sensitive!</p>
+            </div>
+            <div class="divider">
+            </div>
+            <div class="body">
+                <div class="add-friend-hint">
+                    <input [(ngModel)]="username" (keypress)="onUsernameInput($event)"  #friendInput placeholder="Enter a Username#0000">
+                    <div (click)="friendInput.focus()" *ngIf="username" class="add-friend-hint-content">{{username | discriminator}}</div>
+                </div>
+                <button (click)="addFriend(username.value)">Add New Friend</button>
+            </div>
+        </div>
+    </div>
+</ng-container>

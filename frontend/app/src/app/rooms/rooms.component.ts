@@ -6,6 +6,7 @@ import { WebsocketService } from '../websocket.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LoggingService } from '../logging.service';
 import { CreationDialogComponent } from './creation-dialog/creation-dialog.component';
+import { AddFriendDialogComponent } from './add-friend-dialog/add-friend-dialog.component';
 
 enum Presence {
   "Online" = 0,
@@ -37,6 +38,7 @@ interface Room{
 export class RoomsComponent implements OnInit {
   @ViewChild("grid") grid: ElementRef;
   @ViewChild("creation")  creationDialog: CreationDialogComponent
+  @ViewChild("addFriend")  addFriendDialog: AddFriendDialogComponent
   public friends: Friend[];
   public rooms: Room[]
   public page: number;

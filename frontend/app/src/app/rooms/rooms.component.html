@@ -2,7 +2,8 @@
     <div class="sidenav">
         <div class="sidenav-header">
             <h1>Friends</h1>
-            <img src="/assets/icons/add-friend.svg" />
+
+            <img (click)="addFriend.open()" src="/assets/icons/add-friend.svg" />
         </div>
         <div class="divider"></div>
         <div class="friends-list">
@@ -106,3 +107,4 @@
 
 
 <app-creation-dialog #creation></app-creation-dialog>
+<app-add-friend-dialog #addFriend></app-add-friend-dialog>
