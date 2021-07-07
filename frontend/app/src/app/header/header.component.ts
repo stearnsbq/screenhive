@@ -10,14 +10,12 @@ import { ProfileDialogComponent } from './profile-dialog/profile-dialog.componen
 })
 export class HeaderComponent implements OnInit {
   @ViewChild("profile") profile: ProfileDialogComponent
-  public isMessagesOpen: boolean;
   public isNotificationsOpen: boolean;
   public isUserOpen: boolean;
   public isHamburgerMenuOpen: boolean;
   public user: any;
 
   constructor(public router: Router, public auth: AuthService) { 
-    this.isMessagesOpen = false;
     this.isNotificationsOpen = false;
     this.isUserOpen = false;
     this.isHamburgerMenuOpen = false;
@@ -29,9 +27,6 @@ export class HeaderComponent implements OnInit {
   }
 
 
-  public showSearch(){
-    return !this.router.url.includes("/room")
-  }
 
   home(){
     this.router.navigate(['/rooms'])

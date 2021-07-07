@@ -1,45 +1,6 @@
 <div class="content">
-    <div class="sidenav">
-        <div class="sidenav-header">
-            <h1>Friends</h1>
-
-            <img (click)="addFriend.open()" src="/assets/icons/add-friend.svg" />
-        </div>
-        <div class="divider"></div>
-        <div class="friends-list">
-            <ul *ngIf="friends.length > 0; else noFriends;">
-                <ng-container *ngFor="let friend of friends">
-                    <li class="friends-list-item">
-                        <div class="friend-info">
-                            <img class="friend-avatar" [src]="friend.avatar">
-                            <div class="friend-status">
-                                <span class="name">{{friend.name}}</span>
-                                <span class="presence"><span [ngClass]="{'online': friend.presence === Presence.Online, 'offline': friend.presence === Presence.Offline, 'away': friend.presence === Presence.Away, 'dnd': friend.presence === 3}" class="dot"></span>{{Presence[friend.presence]}}</span>
-                            </div>
-                            
-                        </div>
-
-                        <div class="friend-actions">
-                            <div class="friend-action-button">
-                                <img src="/assets/icons/friend-chat.svg" class="friend-message">
-                            </div>
-    
-                            <div class="friend-action-button">
-                                <img src="/assets/icons/friend-more.svg" class="friend-more">
-                            </div>
-                        </div>
-
-                    </li>
-                    <li class="divider"></li>
-                </ng-container>
-
-            </ul>
-
-            <ng-template #noFriends>
-                
-            </ng-template>
-        </div>
-    </div>
+    <!-- <div class="sidenav">
+    </div> -->
     <div class="rooms">
         <div class="rooms-header">
             <h1>Rooms</h1>
@@ -107,4 +68,3 @@
 
 
 <app-creation-dialog #creation></app-creation-dialog>
-<app-add-friend-dialog #addFriend></app-add-friend-dialog>

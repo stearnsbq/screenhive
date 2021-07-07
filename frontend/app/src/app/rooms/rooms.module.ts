@@ -5,12 +5,10 @@ import { RoomsRoutingModule } from './rooms-routing.module';
 import { RoomsComponent } from './rooms.component';
 import { CreationDialogComponent } from './creation-dialog/creation-dialog.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { AddFriendDialogComponent } from './add-friend-dialog/add-friend-dialog.component';
-import { DiscriminatorPipe } from './discriminator.pipe';
 
 
 @NgModule({
-  declarations: [RoomsComponent, CreationDialogComponent, AddFriendDialogComponent, DiscriminatorPipe],
+  declarations: [RoomsComponent, CreationDialogComponent],
   imports: [
     CommonModule,
     FormsModule,
