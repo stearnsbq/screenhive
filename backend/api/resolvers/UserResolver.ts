@@ -16,25 +16,7 @@ export class UserResolver {
 		return '';
 	}
 
-	@FieldResolver(() => [ String ])
-	public async friends(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
-		return (
-		  (
-		    await prisma.user.findUnique({
-		      where: {
-		        id: user.id,
-		      },
-		      select: {
-		        friends: {
-		          select: {
-		            username: true,
-		          },
-		        },
-		      },
-		    })
-		  )?.friends || []
-		)
-	}
+
 
 	@FieldResolver(() => [ Report ])
 	public async reports(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
@@ -76,6 +58,7 @@ export class UserResolver {
 			throw new Error(err);
 		}
 	}
+
 
 	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
 	@Mutation((returns) => Boolean)

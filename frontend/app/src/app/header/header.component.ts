@@ -10,14 +10,15 @@ import { ProfileDialogComponent } from './profile-dialog/profile-dialog.componen
 })
 export class HeaderComponent implements OnInit {
   @ViewChild("profile") profile: ProfileDialogComponent
-  public isMessagesOpen: boolean;
   public isNotificationsOpen: boolean;
   public isUserOpen: boolean;
   public isHamburgerMenuOpen: boolean;
   public user: any;
 
+  public small: boolean;
+
   constructor(public router: Router, public auth: AuthService) { 
-    this.isMessagesOpen = false;
+    this.small = false;
     this.isNotificationsOpen = false;
     this.isUserOpen = false;
     this.isHamburgerMenuOpen = false;
@@ -25,13 +26,14 @@ export class HeaderComponent implements OnInit {
   } 
 
   ngOnInit(): void {
+
+    this.small = window.innerWidth <= 745
+
+    window.onresize = () => this.small = window.innerWidth <= 745;
     
   }
 
 
-  public showSearch(){
-    return !this.router.url.includes("/room")
-  }
 
   home(){
     this.router.navigate(['/rooms'])
