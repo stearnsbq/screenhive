@@ -112,6 +112,16 @@
 
 }
 
+.header-top{
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.header-bottom{
+  width: 100%;
+}
+
 
 
 .messages-dropdown {
@@ -159,6 +169,7 @@
 .hamburger-menu{
   width: 100%;
   position: absolute;
+  top: 103px;
   z-index: 99;
   background-color: #48484b;
   box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
@@ -185,11 +196,13 @@
   }
 
   .content {
-    justify-content: space-between;
+    flex-direction: column;
   }
 
-  .search {
-    width: 95%;
+  .search-bar {
+    width: 96%;
+    padding: 5px;
+    margin: 5px;
   }
 
   .spacer {

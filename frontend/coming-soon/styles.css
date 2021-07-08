@@ -10,4 +10,5 @@ body{
 .container{
     color: white;
     margin: auto;
+    text-align: center;
 }

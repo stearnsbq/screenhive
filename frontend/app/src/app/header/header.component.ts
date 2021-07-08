@@ -15,7 +15,10 @@ export class HeaderComponent implements OnInit {
   public isHamburgerMenuOpen: boolean;
   public user: any;
 
+  public small: boolean;
+
   constructor(public router: Router, public auth: AuthService) { 
+    this.small = false;
     this.isNotificationsOpen = false;
     this.isUserOpen = false;
     this.isHamburgerMenuOpen = false;
@@ -23,6 +26,10 @@ export class HeaderComponent implements OnInit {
   } 
 
   ngOnInit(): void {
+
+    this.small = window.innerWidth <= 745
+
+    window.onresize = () => this.small = window.innerWidth <= 745;
     
   }
 
