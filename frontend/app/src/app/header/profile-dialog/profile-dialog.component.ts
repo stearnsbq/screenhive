@@ -5,7 +5,6 @@ import { AuthService } from 'src/app/auth.service';
 
 enum Section{
   Account = 0, 
-  Billing = 1, 
 }
 
 

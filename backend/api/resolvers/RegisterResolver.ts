@@ -64,7 +64,6 @@ export class RegisterResolver {
 					username,
 					password: await argon2.hash(password),
 					email,
-					discriminator: (Math.floor(Math.random() * (9999 - 1 + 1)) + 1).toString().padStart(4, '0'),
 					dob: new Date(dob),
 					registered: new Date(),
 					lastLogin: new Date()

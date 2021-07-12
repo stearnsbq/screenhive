@@ -52,14 +52,14 @@ export class LoginResolver {
 
 	@Mutation(() => String)
 	async login(
-		@Arg('email') email: string,
+		@Arg('username') username: string,
 		@Arg('password') password: string,
 		@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient }
 	) {
 		try {
 			const user = await prisma.user.findUnique({
 				where: {
-					email
+					username
 				},
 				include: {
 					roles: true
@@ -80,7 +80,7 @@ export class LoginResolver {
 
 				await prisma.user.update({
 					where: {
-						email
+						username
 					},
 					data: {
 						lastLogin: new Date()
@@ -100,6 +100,7 @@ export class LoginResolver {
 
 			throw new Error();
 		} catch (err) {
+			console.log(err)
 			res.status(401);
 			throw new Error('Invalid Username or Password');
 		}

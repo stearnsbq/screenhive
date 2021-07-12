@@ -14,8 +14,7 @@ datasource db {
 
 model User{
   id Int @id @default(autoincrement())
-  username String @db.VarChar(50)
-  discriminator String @db.Char(4)
+  username String @db.VarChar(50) @unique
   email String @db.VarChar(100) @unique
   password String @db.VarChar(255)
   dob DateTime @db.Date
@@ -28,9 +27,6 @@ model User{
   reports Report[] @relation("reporter")
   reportsAgainstUser Report[] @relation("reportee")
   roles Role[] 
-
-  @@unique([username, discriminator], name: "username")
-
 }
 
 model RevokedToken{

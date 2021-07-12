@@ -36,7 +36,6 @@ export class ApiService {
           dob
           registered
           verified
-          discriminator
         }
       }
     `;

@@ -4,15 +4,13 @@
             <div class="profile-sidenav">
                 <div class="sidenav-header">
                     <img src="https://via.placeholder.com/100">
-                    <h2>{{user.username}}<span>#{{user.discriminator}}</span></h2>
+                    <h2>{{user.username}}</h2>
                 </div>
                 <div class="divider"></div>
                 <div class="sidenav-controls">
                     <ul>
                         <li (click)="section = Section.Account" [ngClass]="{'active': section === Section.Account}">
                             <img src="/assets/icons/account.svg" /> Account</li>
-                        <li (click)="section = Section.Billing" [ngClass]="{'active': section === Section.Billing}">
-                            <img src="/assets/icons/billing.svg" /> Billing</li>
                     </ul>
                 </div>
             </div>
@@ -21,7 +19,6 @@
                     <img (click)="close()" src="/assets/icons/close.svg">
                     <ng-container [ngSwitch]="section">
                         <h2 *ngSwitchCase="Section.Account">Account</h2>
-                        <h2 *ngSwitchCase="Section.Billing">Billing</h2>
                     </ng-container>
 
                 </div>
@@ -81,10 +78,6 @@
                         <div class="two-factor-settings">
                             <h4>Two Factor Settings</h4>
                         </div>
-
-                    </div>
-
-                    <div *ngSwitchCase="Section.Billing" class="billing">
 
                     </div>
 
