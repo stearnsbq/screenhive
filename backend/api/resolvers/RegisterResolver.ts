@@ -55,7 +55,7 @@ export class RegisterResolver {
 
 			const result = await verify(process.env.HCAPTCHA_SECRET as string, captcha) // verify the captcha token
 			
-			if (result.success !== true) {
+			if (!result.success) {
 				throw new Error('Invalid captcha token!');
 			}
 
