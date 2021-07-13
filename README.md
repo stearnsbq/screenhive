@@ -8,7 +8,39 @@ A secure virtual browser based group watch / collaboration platform heavily insp
 ## Work In Progress Screenshots
 
 
+
 ### Login Screen
 <p align="center">
   <img src="https://i.imgur.com/cePwWA2.jpeg" style="text-align:center;">
+</p>
+
+
+### Register Screen
+<p align="center">
+  <img src="https://i.imgur.com/Z0PdGO4.jpeg" style="text-align:center;">
+</p>
+
+### Forgot Password Screen
+<p align="center">
+  <img src="https://i.imgur.com/PKDhavb.jpeg" style="text-align:center;">
+</p>
+
+### Rooms Page (No Rooms Open)
+<p align="center">
+  <img src="https://i.imgur.com/W3gM6GW.png" style="text-align:center;">
+</p>
+
+### Rooms Page (Some Rooms Open)
+<p align="center">
+  <img src="https://i.imgur.com/ZFqf1Tx.png" style="text-align:center;">
+</p>
+
+### Profile Page
+<p align="center">
+  <img src="https://i.imgur.com/oescQyj.png" style="text-align:center;">
+</p>
+
+### Room Page
+<p align="center">
+  <img src="https://i.imgur.com/mjo9fOB.png" style="text-align:center;">
 </p>
