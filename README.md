@@ -10,5 +10,5 @@ A secure virtual browser based group watch / collaboration platform heavily insp
 
 ### Login Screen
 <p align="center">
-  <img src="https://i.imgur.com/cePwWA2.jpeg" width="250" style="text-align:center;">
+  <img src="https://i.imgur.com/cePwWA2.jpeg" style="text-align:center;">
 </p>
