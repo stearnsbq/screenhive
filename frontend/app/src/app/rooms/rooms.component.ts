@@ -3,6 +3,7 @@ import { WebsocketService } from '../websocket.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LoggingService } from '../logging.service';
 import { CreationDialogComponent } from './creation-dialog/creation-dialog.component';
+import { HeaderService } from '../header.service';
 
 interface Room{
   id: string, 
@@ -25,7 +26,7 @@ export class RoomsComponent implements OnInit {
   public total: number;
 
 
-  constructor(private websocketService: WebsocketService, private router: Router, private logging: LoggingService, route:ActivatedRoute) { 
+  constructor(private websocketService: WebsocketService, private router: Router, private logging: LoggingService, private headerService: HeaderService) { 
     this.page = 1;
     this.total = 0;
   }
@@ -42,10 +43,13 @@ export class RoomsComponent implements OnInit {
 
     this.websocketService.getRooms(this.page, 16)
 
-    
     this.websocketService.listenToEvent('rooms').subscribe(({rooms, total}) => {
       this.rooms = rooms;
       this.total = total;
+    })
+
+    this.headerService.searchSubject.subscribe(query => {
+      this.websocketService.getRooms(this.page, 16, query)
     })
 
   }

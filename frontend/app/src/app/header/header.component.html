@@ -14,7 +14,7 @@
     <div class="search" *ngIf="router.url === '/rooms'">
       <div class="search-bar">
         <img src="/assets/icons/search.svg" />
-        <input type="search" placeholder="Search for rooms" />
+        <input type="search" (input)="headerService.searchSubject.next($event.target.value)" placeholder="Search for rooms" />
       </div>
     </div>
 

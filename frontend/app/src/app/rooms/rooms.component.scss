@@ -5,6 +5,8 @@
 	flex-direction: row;
 }
 
+
+
 .no-rooms {
 	color: white;
 	text-align: center;
@@ -122,6 +124,9 @@
 }
 
 .rooms {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
 	background-color: #262626;
 	width: 100%;
 	overflow: auto;
@@ -130,6 +135,10 @@
 		margin-left: 155px;
 		margin-right: 155px;
 	}
+}
+
+.rooms-container{
+	
 }
 
 .sidenav {
@@ -219,6 +228,36 @@
 
 		background-color: #48484b;
 	}
+}
+
+.rooms-paginator{
+	margin: 0;
+	width: 100%;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-self: center;
+	width: 100px;
+	margin-bottom: 20px;
+
+	.left{
+		background-color: #ff8200;
+	}
+
+	.right{
+		background-color: #4EA699;
+	}
+
+	.pagination{
+		display: flex;
+		justify-content: center;
+		flex-direction: row;
+		width: 40px;
+		height: 40px;
+		
+	}
+
+
 }
 
 .rooms-grid {

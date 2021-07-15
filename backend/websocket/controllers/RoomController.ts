@@ -54,7 +54,7 @@ export class RoomController {
 	async onGetRooms(
 		@ConnectedSocket() socket: any,
 		@SocketIO() io: any,
-		@MessageBody() { page = 1, limit = 16, query = '' }: { page: number; limit: number; query?: string }
+		@MessageBody() { page = 1, limit = 16, search = '' }: { page: number; limit: number; search?: string }
 	) {
 		try {
 			const rooms = Object.entries(await this.redisService.asyncGetAll('rooms')).map(([ id, obj ]) => {
@@ -63,7 +63,7 @@ export class RoomController {
 
 			socket.emit('rooms', {
 				rooms: rooms
-					.filter((room) => (query.length > 0 ? room.name.includes(query) : true))
+					.filter((room) => (search.length > 0 ? room.name.toLowerCase().includes(search.toLowerCase()) : true))
 					.slice((page - 1) * limit, page * limit)
 					.map(({ id, name, users, isPrivate, thumbnail }) => ({
 						id,

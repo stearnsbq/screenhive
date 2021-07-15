@@ -2,60 +2,63 @@
     <!-- <div class="sidenav">
     </div> -->
     <div class="rooms">
-        <div class="rooms-header">
-            <h1>Rooms</h1>
-            <img (click)="creationDialog.open()" src="/assets/icons/create-room.svg">
-        </div>
-        <div class="divider"></div>
-
-        <div class="grid-container">
-
-            <ng-container *ngIf="rooms && rooms.length > 0; else no_rooms">
-                <div class="rooms-grid">
-
-                    <div *ngFor="let room of rooms; let i = index" class="rooms-grid-item" (click)="joinRoom(room)">
-                        <ng-container *ngIf="!room.isPrivate else privateRoom">
-                            <img class="thumbnail" [src]="room.thumbnail || 'https://via.placeholder.com/250x125'" />
-                        </ng-container>
-
-                        <ng-template #privateRoom>
-                            <div class="private-room">
-                                <img src="/assets/icons/lock.svg">
+        <div class="rooms-container">
+            <div class="rooms-header">
+                <h1>Rooms</h1>
+                <img (click)="creationDialog.open()" src="/assets/icons/create-room.svg">
+            </div>
+            <div class="divider"></div>
+    
+            <div class="grid-container">
+    
+                <ng-container *ngIf="rooms && rooms.length > 0; else no_rooms">
+                    <div class="rooms-grid">
+    
+                        <div *ngFor="let room of rooms; let i = index" class="rooms-grid-item" (click)="joinRoom(room)">
+                            <ng-container *ngIf="!room.isPrivate else privateRoom">
+                                <img class="thumbnail" [src]="room.thumbnail || 'https://via.placeholder.com/250x125'" />
+                            </ng-container>
+    
+                            <ng-template #privateRoom>
+                                <div class="private-room">
+                                    <img src="/assets/icons/lock.svg">
+                                </div>
+                            </ng-template>
+                            
+                            <div class="grid-item-footer" [style.background]="i % 2 == 0 ? '#FF8200': '#4EA699'">
+                                <span class="room-name">{{room.name}}</span>
+                                <div class="footer-users">
+                                    <img src="/assets/icons/user.svg" />
+                                    <span>{{room.users.length}}/20</span>
+                                </div>
+    
                             </div>
-                        </ng-template>
-                        
-                        <div class="grid-item-footer" [style.background]="i % 2 == 0 ? '#FF8200': '#4EA699'">
-                            <span class="room-name">{{room.name}}</span>
-                            <div class="footer-users">
-                                <img src="/assets/icons/user.svg" />
-                                <span>{{room.users.length}}/20</span>
-                            </div>
-
                         </div>
                     </div>
-                </div>
-
-            </ng-container>
-
-
-            <ng-template #no_rooms>
-                <div class="no-rooms">
-                    <h1>No Rooms are currently open!</h1>
-                    <h3>Would you like to create a room?</h3>
-                    <button (click)="creationDialog.open()" class="create-button">Click Here!</button>
-                </div>
-            </ng-template>
-
-
+    
+                </ng-container>
+    
+    
+                <ng-template #no_rooms>
+                    <div class="no-rooms">
+                        <h1>No Rooms are currently open!</h1>
+                        <h3>Would you like to create a room?</h3>
+                        <button (click)="creationDialog.open()" class="create-button">Click Here!</button>
+                    </div>
+                </ng-template>
+    
+    
+            </div>
         </div>
+        
 
 
         <div class="rooms-paginator">
-            <div class="left-pagination" *ngIf="page > 1">
-
+            <div class="left pagination" >
+                <img src="/assets/icons/paginator-back.svg">
             </div>
-            <div class="right-pagination">
-
+            <div class="right pagination" >
+                <img src="/assets/icons/paginator-next.svg">
             </div>
         </div>
 

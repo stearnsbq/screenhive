@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../auth.service';
+import { HeaderService } from '../header.service';
 import { ProfileDialogComponent } from './profile-dialog/profile-dialog.component';
 
 @Component({
@@ -17,7 +18,7 @@ export class HeaderComponent implements OnInit {
 
   public small: boolean;
 
-  constructor(public router: Router, public auth: AuthService) { 
+  constructor(public router: Router, public auth: AuthService, public headerService : HeaderService) { 
     this.small = false;
     this.isNotificationsOpen = false;
     this.isUserOpen = false;
