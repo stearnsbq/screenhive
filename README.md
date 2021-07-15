@@ -7,8 +7,6 @@ A secure virtual browser based group watch / collaboration platform heavily insp
 
 ## Work In Progress Screenshots
 
-
-
 ### Login Screen
 <p align="center">
   <img src="https://i.imgur.com/cePwWA2.jpeg" style="text-align:center;">
