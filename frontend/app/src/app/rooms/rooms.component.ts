@@ -26,9 +26,14 @@ export class RoomsComponent implements OnInit {
   public total: number;
 
 
-  constructor(private websocketService: WebsocketService, private router: Router, private logging: LoggingService, private headerService: HeaderService) { 
-    this.page = 1;
+  constructor(private websocketService: WebsocketService, private router: Router, private logging: LoggingService, private headerService: HeaderService, private activatedRoute: ActivatedRoute) { 
     this.total = 0;
+
+    this.activatedRoute.queryParams.subscribe(params => {
+      this.page = parseInt(params["page"]) || 1;
+    })
+
+
   }
 
   async ngOnInit(){
@@ -52,6 +57,12 @@ export class RoomsComponent implements OnInit {
       this.websocketService.getRooms(this.page, 16, query)
     })
 
+  }
+
+  public paginate(page){
+    this.page = page;
+    this.router.navigate(['/rooms'], {queryParams: {page: this.page}})
+    this.websocketService.getRooms(this.page, 16)
   }
 
 

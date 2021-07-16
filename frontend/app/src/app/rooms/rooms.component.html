@@ -54,10 +54,10 @@
 
 
         <div class="rooms-paginator">
-            <div class="left pagination" >
+            <div class="left pagination" *ngIf="page > 1" (click)="paginate(page - 1)">
                 <img src="/assets/icons/paginator-back.svg">
             </div>
-            <div class="right pagination" >
+            <div class="right pagination" *ngIf="total > (16 * page)" (click)="paginate(page + 1)">
                 <img src="/assets/icons/paginator-next.svg">
             </div>
         </div>
