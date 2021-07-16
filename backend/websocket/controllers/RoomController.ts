@@ -58,9 +58,13 @@ export class RoomController {
 		@MessageBody() { page = 1, limit = 16, search = '' }: { page: number; limit: number; search?: string }
 	) {
 		try {
+
+
 			const rooms = Object.entries(await this.redisService.asyncGetAll('rooms')).map(([ id, obj ]) => {
 				return { id, ...JSON.parse(obj as string) };
 			});
+
+
 
 			socket.emit('rooms', {
 				rooms: rooms
@@ -80,19 +84,25 @@ export class RoomController {
 		}
 	}
 
+
+
+
+
 	@OnMessage('create-room')
 	async onCreateRoom(
 		@ConnectedSocket() socket: any,
 		@MessageBody() { name, password, isPrivate }: { name: string; password?: string; isPrivate: boolean }
 	) {
-		try {
-			const roomID = nanoid();
 
-			if (isPrivate && !password) {
-				return socket.emit('error', {
-					err: 'Private rooms require a password!'
-				});
-			}
+		if (isPrivate && !password) {
+			return socket.emit('error', {
+				err: 'Private rooms require a password!'
+			});
+		}
+
+		const roomID = nanoid();
+
+		try {
 
 			const queueLength = await this.redisService.asyncRPush("roomQueue", roomID);
 
@@ -121,6 +131,10 @@ export class RoomController {
 
 			return socket.emit('room-creation-success', { roomID });
 		} catch (err) {
+
+			await this.redisService.asyncLRem("roomQueue", 0, roomID);
+			await this.redisService.asyncHDel('rooms', roomID);
+			
 			socket.emit('error', { err });
 		}
 	}
@@ -298,13 +312,16 @@ export class RoomController {
 
 	@OnMessage('video-offer')
 	async onVideoOffer(@ConnectedSocket() socket: any, @MessageBody() { roomID, peer, sdp }: any) {
+		if (!socket.streamer || (socket.streamer && socket.streamer.roomID !== roomID)) {
+			socket.emit('error', { err: 'Unauthorized' });
+		}
+		
 		try {
 			const lock = await this.redisService.lock(`rooms:${roomID}`, 1000);
 
 			if (!await this.redisService.asyncHExists('rooms', roomID)) {
 				return socket.emit('error', { err: 'Room does not exist!' });
 			}
-
 
 			peer ? socket.to(peer).emit('video-offer', { sdp }) : socket.to(roomID).emit('video-offer', { sdp });
 
@@ -313,6 +330,8 @@ export class RoomController {
 			socket.emit('error', { err });
 		}
 	}
+
+
 
 	@OnMessage('video-answer')
 	async onVideoAnswer(@ConnectedSocket() socket: any, @MessageBody() { roomID,  sdp }: any) {
@@ -338,6 +357,7 @@ export class RoomController {
 			socket.emit('error', { err });
 		}
 	}
+
 
 	@OnMessage('user-ice-candidate')
 	async onUserIceCandidate(@ConnectedSocket() socket: any, @MessageBody() { roomID, candidate }: any) {
@@ -387,6 +407,9 @@ export class RoomController {
 	connection(@ConnectedSocket() socket: any) {
 		console.log('Client Connected');
 	}
+
+
+
 
 	@OnDisconnect()
 	async disconnect(@ConnectedSocket() socket: any) {

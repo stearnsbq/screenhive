@@ -11,7 +11,7 @@ export class SioService{
     private _io: io.Server;
 
     constructor(private redisService : RedisService){
-
+        
         this._io = new io.Server(3000, {cors:{
             origin: "*"
         }});

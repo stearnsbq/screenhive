@@ -36,7 +36,6 @@ export class SocketService{
     }
 
 
-
     private onStart(){
         console.log("Starting streamer connection server")
     }

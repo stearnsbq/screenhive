@@ -35,6 +35,12 @@ export class RedisService {
 		return this._lock.lock(resource, ttl);
 	}
 
+
+
+	public asyncLRem(key: string, count: number, valToRemove:string){
+		return promisify(this._pubClient.lrem).bind(this._pubClient)(key, count, valToRemove);
+	}
+
 	public asyncLPos(key: string, val: string){
 		return promisify(this._pubClient.sendCommand).bind(this._pubClient)(`LPOS ${key} ${val}`) as Promise<number>;
 	}
