@@ -21,6 +21,7 @@ export interface Room {
 	users: string[];
 	streamer?: string;
 	thumbnail?: string;
+	inQueue: boolean;
 }
 
 @Service()
@@ -93,6 +94,8 @@ export class RoomController {
 				});
 			}
 
+			const queueLength = await this.redisService.asyncRPush("roomQueue", roomID);
+
 			await this.redisService.asyncHSet(
 				'rooms',
 				roomID,
@@ -102,15 +105,22 @@ export class RoomController {
 					password: isPrivate && password ? await argon2.hash(password) : undefined,
 					users: [],
 					thumbnail: '',
-					streamer: undefined
+					streamer: undefined,
+					inQueue: queueLength > 1
 				})
 			);
 
 			socket.join(roomID);
 
+			if(queueLength > 1){
+
+				const queuePosition = await this.redisService.asyncLPos("roomQueue", roomID)
+
+				return socket.emit('room-creation-success', { roomID, queuePosition });
+			}
+
 			return socket.emit('room-creation-success', { roomID });
 		} catch (err) {
-			console.log(err);
 			socket.emit('error', { err });
 		}
 	}

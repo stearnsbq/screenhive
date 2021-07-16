@@ -35,6 +35,22 @@ export class RedisService {
 		return this._lock.lock(resource, ttl);
 	}
 
+	public asyncLPos(key: string, val: string){
+		return promisify(this._pubClient.sendCommand).bind(this._pubClient)(`LPOS ${key} ${val}`) as Promise<number>;
+	}
+
+	public asyncRPush(key: string, val: string){
+		return new Promise<number>((resolve, reject) => {
+			this._pubClient.rpush(key, val, (err, res) => {
+				if (err) {
+					return reject(err);
+				}
+
+				return resolve(res);
+			});
+		});
+	}
+
 	public asyncGetAll(hash: string) {
 		return promisify(this._pubClient.hgetall).bind(this._pubClient)(hash);
 	}
