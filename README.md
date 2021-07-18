@@ -12,7 +12,6 @@ A secure virtual browser based group watch / collaboration platform heavily insp
   <img src="https://i.imgur.com/cePwWA2.jpeg" style="text-align:center;">
 </p>
 
-
 ### Register Screen
 <p align="center">
   <img src="https://i.imgur.com/Z0PdGO4.jpeg" style="text-align:center;">

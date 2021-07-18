@@ -1,0 +1,27 @@
+{
+  "name": "screenhive-rooms-orchestrator",
+  "version": "1.0.0",
+  "description": "Small microservice that handles the creation of room pods in k8s to provide the virtual browser experience",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm run build:live",
+    "build": "tsc -p .",
+    "build:live": "ts-node-dev index.ts"
+  },
+  "author": "stearnsbq",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^4.17.12",
+    "@types/node": "^14.14.41",
+    "nodemon": "^2.0.7",
+    "ts-node": "^9.1.1",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.3.4"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.15.0",
+    "@types/redis": "^2.8.31",
+    "redis": "^3.1.2"
+  }
+}
