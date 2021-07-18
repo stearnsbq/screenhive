@@ -1,6 +1,5 @@
 FROM node
 
-
 RUN apk update
 
 WORKDIR /usr/src/app
