@@ -31,9 +31,7 @@ export class HeaderComponent implements OnInit {
     this.small = window.innerWidth <= 745
 
     window.onresize = () => this.small = window.innerWidth <= 745;
-    
   }
-
 
 
   home(){

@@ -59,6 +59,8 @@ export class RoomsComponent implements OnInit {
 
   }
 
+  
+
   public paginate(page){
     this.page = page;
     this.router.navigate(['/rooms'], {queryParams: {page: this.page}})

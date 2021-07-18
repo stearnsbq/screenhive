@@ -100,6 +100,7 @@ export class RoomController {
 			});
 		}
 
+
 		const roomID = nanoid();
 
 		try {
@@ -158,6 +159,8 @@ export class RoomController {
 				return socket.emit('error', { err: 'User is not in the room!' });
 			}
 
+
+
 			room.users.splice(idx, 1);
 
 			socket.to(roomID).emit('user-left-room', { user: username });
@@ -209,7 +212,7 @@ export class RoomController {
 
 			const peers = await io.in(roomID).allSockets();
 
-			console.log([...peers])
+			
 			socket.emit('streamer-join-success', { peers:  [...peers]});
 		} catch (err) {
 			socket.emit('error', { err });
@@ -274,7 +277,10 @@ export class RoomController {
 	async onSendEmote(
 		@ConnectedSocket() socket: any,
 		@MessageBody() { roomID, emote }: { roomID: string; emote: string }
-	) {}
+	) {
+
+
+	}
 
 	@OnMessage('send-chat')
 	async onSendChat(

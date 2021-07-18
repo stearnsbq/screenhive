@@ -3,4 +3,4 @@
     "description": "A secure virtual browser based group watch / collaboration platform heavily inspired by the now defunct rabb.it and many other services such as neko. The main goals of this platform is to provide a smooth user experience, able to be scalable up to as many users as possible, and be secure.",
     "accomplishments": ["Implemented a virtual browser container system", "Built to be secure as possible", "Built with horizontal scaling in mind", "Provides a digital platform for people to interact and enjoy content together"],
     "technologies": ["NodeJS", "Go", "WebRTC", "Angular", "PostgreSQL", "Websockets"]
-  }
+}
