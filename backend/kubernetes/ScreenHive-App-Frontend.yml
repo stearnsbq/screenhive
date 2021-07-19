@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: ScreenHive-App-Frontend
-        image: <Image>
+        image: stearnsbq/screenhive:app
         resources:
           limits:
             memory: "512Mi"

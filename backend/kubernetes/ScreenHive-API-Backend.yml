@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: ScreenHive-API-Backend
-        image: <Image>
+        image: stearnsbq/screenhive:api
         resources:
           limits:
             memory: "512Mi"

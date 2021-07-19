@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: ScreenHive-Websocket-Backend
-        image: <Image>
+        image: stearnsbq/screenhive:websocket
         resources:
           limits:
             memory: "512Mi"
