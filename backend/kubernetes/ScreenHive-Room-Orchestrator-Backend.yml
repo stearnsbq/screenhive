@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ScreenHive-Room-Orchestrator-Backend
+spec:
+  selector:
+    matchLabels:
+      app: ScreenHive-Room-Orchestrator-Backend
+  template:
+    metadata:
+      labels:
+        app: ScreenHive-Room-Orchestrator-Backend
+    spec:
+      containers:
+      - name: ScreenHive-Room-Orchestrator-Backend
+        image: <Image>
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
