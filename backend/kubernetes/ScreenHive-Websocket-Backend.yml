@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ScreenHive-Websocket-Backend
+  name: websocket
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ScreenHive-Websocket-Backend
+      app: websocket
   template:
     metadata:
       labels:
-        app: ScreenHive-Websocket-Backend
+        app: websocket
     spec:
       containers:
-      - name: ScreenHive-Websocket-Backend
+      - name: websocket
         image: stearnsbq/screenhive:websocket
         resources:
           limits:
@@ -26,11 +26,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ScreenHive-Websocket-Backend
+  name: websocket
 spec:
   type: NodePort
   selector:
-    app: ScreenHive-Websocket-Backend
+    app: websocket
   ports:
   - port: 80
     targetPort: 3000

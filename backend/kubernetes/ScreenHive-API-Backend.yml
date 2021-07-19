@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ScreenHive-API-Backend
+  name: api
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ScreenHive-API-Backend
+      app: api
   template:
     metadata:
       labels:
-        app: ScreenHive-API-Backend
+        app: api
     spec:
       containers:
-      - name: ScreenHive-API-Backend
+      - name: api
         image: stearnsbq/screenhive:api
         resources:
           limits:
@@ -26,11 +26,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ScreenHive-API-Backend
+  name: api
 spec:
   type: NodePort
   selector:
-    app: ScreenHive-API-Backend
+    app: api
   ports:
   - port: 80
     targetPort: 8080

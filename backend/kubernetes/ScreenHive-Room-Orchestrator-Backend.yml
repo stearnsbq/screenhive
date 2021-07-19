@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ScreenHive-Room-Orchestrator-Backend
+  name: orchestrator
 spec:
   selector:
     matchLabels:
-      app: ScreenHive-Room-Orchestrator-Backend
+      app: orchestrator
   template:
     metadata:
       labels:
-        app: ScreenHive-Room-Orchestrator-Backend
+        app: orchestrator
     spec:
       containers:
-      - name: ScreenHive-Room-Orchestrator-Backend
-        image: <Image>
+      - name: orchestrator
+        image: stearnsbq/screenhive:room-orchestrator
         resources:
           limits:
             memory: "512Mi"

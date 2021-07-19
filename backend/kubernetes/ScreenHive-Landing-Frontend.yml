@@ -10,11 +10,11 @@ spec:
   template:
     metadata:
       labels:
-        app: ScreenHive-Landing-Frontend
+        app: landing
     spec:
       containers:
-      - name: ScreenHive-Landing-Frontend
-        image: <Image>
+      - name: landing
+        image: stearnsbq/screenhive:landing
         resources:
           limits:
             memory: "512Mi"
@@ -26,11 +26,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ScreenHive-Landing-Frontend
+  name: landing
 spec:
   type: NodePort
   selector:
-    app: ScreenHive-Landing-Frontend
+    app: landing
   ports:
   - port: 80
     targetPort: 80
