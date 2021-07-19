@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-RUN npm install
+RUN npm install && npm install typescript -g
 RUN npm run build
 
 EXPOSE 3000
