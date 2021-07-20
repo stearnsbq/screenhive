@@ -28,7 +28,7 @@ kind: Service
 metadata:
   name: websocket
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: websocket
   ports:

@@ -28,7 +28,7 @@ kind: Service
 metadata:
   name: landing
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: landing
   ports:

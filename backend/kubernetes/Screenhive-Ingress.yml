@@ -1,0 +1,52 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: screenhive-ingress
+  labels:
+    name: screenhive-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+  # - host: screenhive.io
+  #   http:
+  #     paths:
+  #     - pathType: Prefix
+  #       path: "/"
+  #       backend:
+  #         service:
+  #           name: landing
+  #           port:
+  #             number: 80
+  - host: watch.screenhive.io
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: app
+            port: 
+              number: 80
+  - host: api.screenhive.io
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: api
+            port:
+              number: 8080
+  - host: ws.screenhive.io
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+            service:
+              name: websocket
+              port:
+                number: 3000
+          
+
