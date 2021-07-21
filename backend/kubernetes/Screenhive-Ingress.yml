@@ -8,21 +8,21 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
   rules:
-  # - host: screenhive.io
-  #   http:
-  #     paths:
-  #     - pathType: Prefix
-  #       path: "/"
-  #       backend:
-  #         service:
-  #           name: landing
-  #           port:
-  #             number: 80
+  - host: www.screenhive.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: landing
+            port:
+              number: 80
   - host: watch.screenhive.io
     http:
       paths:
-      - pathType: Prefix
-        path: "/"
+      - path: /
+        pathType: Prefix
         backend:
           service:
             name: app
@@ -31,22 +31,22 @@ spec:
   - host: api.screenhive.io
     http:
       paths:
-      - pathType: Prefix
-        path: "/"
+      - path: /
+        pathType: Prefix
         backend:
           service:
             name: api
             port:
-              number: 8080
+              number: 80
   - host: ws.screenhive.io
     http:
       paths:
-      - pathType: Prefix
-        path: "/"
+      - path: /
+        pathType: Prefix
         backend:
             service:
               name: websocket
               port:
-                number: 3000
+                number: 80
           
 
