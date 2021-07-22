@@ -1,15 +1,15 @@
-import * as k8s from "@kubernetes/client-node";
 import { config } from "dotenv";
 import { RedisClient } from "redis";
 import { promisify } from "util";
-import * as jwt from "jsonwebtoken";
+import { sign } from "jsonwebtoken";
+import { CoreV1Api, KubeConfig } from "@kubernetes/client-node";
 config();
 
-const kubeConfig = new k8s.KubeConfig();
+const kubeConfig = new KubeConfig();
 
 kubeConfig.loadFromDefault();
 
-const k8sAPI = kubeConfig.makeApiClient(k8s.CoreV1Api);
+const k8sAPI = kubeConfig.makeApiClient(CoreV1Api);
 
 const redisClient = new RedisClient({
   host: process.env.REDIS_BACKEND as string,
@@ -39,7 +39,7 @@ setInterval(async () => {
         "roomQueue"
       );
 
-      const streamer_jwt = jwt.sign(
+      const streamer_jwt = sign(
         { roomID: roomToCreate },
         process.env.STREAMER_JWT_SECRET as string,
         { expiresIn: "5h" }
@@ -47,16 +47,16 @@ setInterval(async () => {
 
       // create the pod
 
-      k8sAPI.createNamespacedPod("rooms", {
+      await k8sAPI.createNamespacedPod("rooms", {
         apiVersion: "apps/v1",
         kind: "Deployment",
         metadata: {
-          name: "room",
+          name: roomToCreate,
         },
         spec: {
           containers: [
             {
-              name: "room",
+              name: roomToCreate,
               image: "stearnsbq/screenhive:room",
               resources: { limits: { memory: "2048Mi", cpu: "500m" } },
               ports: [{ containerPort: 8080 }],
@@ -70,6 +70,20 @@ setInterval(async () => {
               ],
             },
           ],
+        },
+      });
+
+      await k8sAPI.createNamespacedService("rooms", {
+        apiVersion: "v1",
+        kind: "Service",
+        metadata: {
+          name: roomToCreate,
+        },
+        spec: {
+          type: "ClusterIP",
+          selector: {
+            app: roomToCreate,
+          },
         },
       });
     }
