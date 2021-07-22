@@ -2,7 +2,7 @@ import * as k8s from "@kubernetes/client-node";
 import { config } from "dotenv";
 import { RedisClient } from "redis";
 import { promisify } from "util";
-
+import * as jwt from "jsonwebtoken";
 config();
 
 const kubeConfig = new k8s.KubeConfig();
@@ -31,17 +31,21 @@ setInterval(async () => {
     0
   );
 
-  k8sAPI.listNamespacedPod("rooms").then((res) => {
-    console.log(res.body);
-  });
-
   if (poll) {
     const { body } = await k8sAPI.listNamespacedPod("rooms");
 
-    if (body.items.length <= 100) {
+    if (body.items.length <= parseInt(process.env.MAX_ROOMS as string)) {
       const roomToCreate = await promisify(redisClient.lpop).bind(redisClient)(
         "roomQueue"
       );
+
+      const streamer_jwt = jwt.sign(
+        { roomID: roomToCreate },
+        process.env.STREAMER_JWT_SECRET as string,
+        { expiresIn: "5h" }
+      );
+
+      // create the pod
 
       k8sAPI.createNamespacedPod("rooms", {
         apiVersion: "apps/v1",
@@ -56,13 +60,18 @@ setInterval(async () => {
               image: "stearnsbq/screenhive:room",
               resources: { limits: { memory: "2048Mi", cpu: "500m" } },
               ports: [{ containerPort: 8080 }],
-              env: [{name: "STREAMER_JWT", value: "JWT"}, {name: "WS_SERVER", value: "ws://websocket"}]
+              env: [
+                { name: "STREAMER_TOKEN", value: streamer_jwt },
+                { name: "WS_SERVER", value: "ws://websocket" },
+                {
+                  name: "STREAMER_JWT_SECRET",
+                  value: process.env.STREAMER_JWT_SECRET as string,
+                },
+              ],
             },
           ],
         },
       });
-
-      // create the pod
     }
   }
 }, 1000);

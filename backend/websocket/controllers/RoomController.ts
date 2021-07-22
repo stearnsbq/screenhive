@@ -435,7 +435,7 @@ export class RoomController {
 					const idx = room.users.indexOf(username);
 
 					if (idx !== -1) {
-						room.users.splice(room.users.indexOf(username), 1);
+						room.users.splice(idx, 1);
 
 						await this.redisService.asyncHSet('rooms', roomID, JSON.stringify(room));
 

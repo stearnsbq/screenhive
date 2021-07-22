@@ -20,7 +20,7 @@ try {
 
 	const goSocketServer = createServer();
 
-	const { roomID } = jwt.decode(process.env.STREAMER_TOKEN as string) as any;
+	const { roomID } = jwt.verify(process.env.STREAMER_TOKEN as string, process.env.STREAMER_JWT_SECRET as string) as any;
 
 	goSocketServer.on('connection', (socket) => {
 		console.log('Go streamer connected!');
