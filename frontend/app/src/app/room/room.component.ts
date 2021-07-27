@@ -203,7 +203,7 @@ export class RoomComponent implements OnInit, OnDestroy {
         );
         this.dataChannel.addEventListener(
           'close',
-          this.onDataChannelCLose.bind(this)
+          this.onDataChannelClose.bind(this)
         );
         this.dataChannel.addEventListener(
           'error',
@@ -353,7 +353,7 @@ export class RoomComponent implements OnInit, OnDestroy {
 	this.logging.info("Data Channel Opened!")
   }
 
-  onDataChannelCLose(event) {
+  onDataChannelClose(event) {
 	this.logging.info("Data Channel Closed!")
   }
 

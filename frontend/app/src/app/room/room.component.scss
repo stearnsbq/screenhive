@@ -148,15 +148,24 @@
   display: flex;
   justify-content: center;
 
+  img{
+    border-radius: 50%;
+    height: 75px;
+  }
+
   ul {
     list-style: none;
     display: flex;
   }
 
   .user-list-divider {
-    background-color: gray;
-    width: 1px;
-    height: 100%;
+    background-color: rgba($color: gray, $alpha: 0.5);
+    border-radius: 20px;
+    width: 3px;
+    height: 75%;
+    margin-top: 8px;
+    margin-left: 15px;
+    margin-right: 15px;
   }
 }
 
