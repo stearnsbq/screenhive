@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
+import { LoadingService } from './loading.service';
 
 @Component({
   selector: 'app-root',
@@ -11,9 +12,7 @@ import { AuthService } from './auth.service';
 export class AppComponent {
   title = 'screenhive';
 
-  constructor(public auth: AuthService, private api: ApiService, public router: Router){
+  constructor(public auth: AuthService, private api: ApiService, public router: Router, public loading: LoadingService){
       this.api.csrf().then()
-
-
   }
 }

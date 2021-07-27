@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { LoggingService } from '../logging.service';
 import { CreationDialogComponent } from './creation-dialog/creation-dialog.component';
 import { HeaderService } from '../header.service';
+import { LoadingService } from '../loading.service';
 
 interface Room{
   id: string, 
@@ -26,7 +27,7 @@ export class RoomsComponent implements OnInit {
   public total: number;
 
 
-  constructor(private websocketService: WebsocketService, private router: Router, private logging: LoggingService, private headerService: HeaderService, private activatedRoute: ActivatedRoute) { 
+  constructor(private websocketService: WebsocketService, private router: Router, private logging: LoggingService, private headerService: HeaderService, private activatedRoute: ActivatedRoute, private loadingService: LoadingService) { 
     this.total = 0;
 
     this.activatedRoute.queryParams.subscribe(params => {
@@ -48,12 +49,16 @@ export class RoomsComponent implements OnInit {
 
     this.websocketService.getRooms(this.page, 16)
 
+    this.loadingService.loading = true;
+
     this.websocketService.listenToEvent('rooms').subscribe(({rooms, total}) => {
+      this.loadingService.loading = false;
       this.rooms = rooms;
       this.total = total;
     })
 
     this.headerService.searchSubject.subscribe(query => {
+      this.loadingService.loading = true;
       this.websocketService.getRooms(this.page, 16, query)
     })
 
@@ -64,6 +69,7 @@ export class RoomsComponent implements OnInit {
   public paginate(page){
     this.page = page;
     this.router.navigate(['/rooms'], {queryParams: {page: this.page}})
+    this.loadingService.loading = true;
     this.websocketService.getRooms(this.page, 16)
   }
 

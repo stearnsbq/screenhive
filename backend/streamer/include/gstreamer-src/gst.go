@@ -62,18 +62,6 @@ func CreatePipeline(codecName string, tracks []*webrtc.TrackLocalStaticSample, p
 		pipelineStr = pipelineSrc + " ! opusenc ! " + pipelineStr
 		clockRate = audioClockRate
 
-	case "g722":
-		pipelineStr = pipelineSrc + " ! avenc_g722 ! " + pipelineStr
-		clockRate = audioClockRate
-
-	case "pcmu":
-		pipelineStr = pipelineSrc + " ! audio/x-raw, rate=8000 ! mulawenc ! " + pipelineStr
-		clockRate = pcmClockRate
-
-	case "pcma":
-		pipelineStr = pipelineSrc + " ! audio/x-raw, rate=8000 ! alawenc ! " + pipelineStr
-		clockRate = pcmClockRate
-
 	default:
 		panic("Unhandled codec " + codecName)
 	}

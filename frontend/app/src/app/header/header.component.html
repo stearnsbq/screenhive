@@ -12,7 +12,7 @@
    
     <div class="small-spacer"></div>
 
-    <div class="search" *ngIf="router.url === '/rooms'">
+    <div class="search" *ngIf="router.url.includes('/rooms')">
       <div class="search-bar">
         <img src="/assets/icons/search.svg" />
         <input type="search" (input)="headerService.searchSubject.next($event.target.value)" placeholder="Search for rooms" />

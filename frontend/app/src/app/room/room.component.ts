@@ -126,7 +126,8 @@ export class RoomComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnInit() {
+  async ngOnInit() {
+    await this.socketService.connect()
     this.socketService.listenToEvent('user-left-room').subscribe(({ user }) => {
       this.room.users.splice(this.room.users.indexOf(user), 1);
     });

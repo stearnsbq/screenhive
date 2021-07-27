@@ -21,6 +21,7 @@ import { CookieService } from 'ngx-cookie';
 import { HeaderModule } from './header/header.module';
 import { TokenRefreshInterceptor } from './token-refresh.interceptor';
 import { StorageService } from './storage.service';
+import { UtilModule } from './util/util.module';
 
 export function createApollo(
   httpLink: HttpLink,
@@ -64,6 +65,7 @@ export function createApollo(
     BrowserAnimationsModule,
     HttpClientModule,
     FormsModule,
+    UtilModule,
     ReactiveFormsModule,
     CookieModule.forRoot(),
   ],

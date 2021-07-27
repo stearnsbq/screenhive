@@ -2,6 +2,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/auth.service';
+import { LoadingService } from 'src/app/loading.service';
 
 @Component({
   selector: 'app-register',
@@ -15,7 +16,7 @@ export class RegisterComponent implements OnInit {
   public failed: boolean;
   @Output() modeChange: EventEmitter<string>
   
-  constructor(private formBuilder: FormBuilder, private authService: AuthService, private router: Router) {
+  constructor(private formBuilder: FormBuilder, private authService: AuthService, private router: Router, private loadingService : LoadingService) {
 
     this.registerGroup = this.formBuilder.group({
 			username: [ '', Validators.required ],
@@ -41,6 +42,7 @@ export class RegisterComponent implements OnInit {
 
   public onRegister(){
 		this.submitted = true;
+		this.loadingService.loading = true;
 
 		const {username, password, confirmPassword, email, dob, captcha} = this.registerGroup.controls;
 
@@ -53,6 +55,9 @@ export class RegisterComponent implements OnInit {
 				},
 				(err) => {
 					this.failed = true;
+				},
+				() => {
+					this.loadingService.loading = false;
 				}
 			);
 		}

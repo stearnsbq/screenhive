@@ -1,26 +1,19 @@
 import { io } from 'socket.io-client';
 import { config } from 'dotenv';
 import { createServer } from 'net';
-import * as jwt from 'jsonwebtoken';
-import { spawn } from 'child_process';
 import { exit } from 'process';
 
 config();
 
 try {
-
-
     if(!process.env.STREAMER_TOKEN || !process.env.WS_SERVER){
         console.log("MISSING ENV FILE!")
         exit(1)
     }
 
-
-
-
 	const goSocketServer = createServer();
 
-	const { roomID } = jwt.verify(process.env.STREAMER_TOKEN as string, process.env.STREAMER_JWT_SECRET as string) as any;
+	const roomID = process.env.ROOM_TO_JOIN as string;
 
 	goSocketServer.on('connection', (socket) => {
 		console.log('Go streamer connected!');
@@ -95,13 +88,6 @@ try {
 	goSocketServer.listen(9000, () => {
 		console.log('listening');
 	});
-
-
-    // const go = spawn("go run main.go", {shell: true})
-
-	// go.stdout.on("data", (data) => {
-	// 	console.log(data)
-	// })
 
 
 } catch (err) {

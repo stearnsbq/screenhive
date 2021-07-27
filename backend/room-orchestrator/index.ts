@@ -16,16 +16,9 @@ const redisClient = new RedisClient({
   port: parseInt(process.env.REDIS_PORT as string),
 });
 
-function signalHandler(signal: any) {
-  console.log(`*^!@4=> Received signal to terminate: ${signal}`);
 
-  redisClient.quit();
-}
 
-process.on("SIGINT", signalHandler);
-process.on("SIGTERM", signalHandler);
-
-setInterval(async () => {
+const poller = setInterval(async () => {
   const poll = await promisify(redisClient.lindex).bind(redisClient)(
     "roomQueue",
     0
@@ -42,7 +35,7 @@ setInterval(async () => {
       const streamer_jwt = sign(
         { roomID: roomToCreate },
         process.env.STREAMER_JWT_SECRET as string,
-        { expiresIn: "5h" }
+        { expiresIn: "2h" }
       );
 
       // create the pod
@@ -58,14 +51,14 @@ setInterval(async () => {
             {
               name: roomToCreate,
               image: "stearnsbq/screenhive:room",
-              resources: { limits: { memory: "2048Mi", cpu: "500m" } },
+              resources: { limits: { memory: "1024Mi", cpu: "1000m" } },
               ports: [{ containerPort: 8080 }],
               env: [
                 { name: "STREAMER_TOKEN", value: streamer_jwt },
                 { name: "WS_SERVER", value: "ws://websocket" },
                 {
-                  name: "STREAMER_JWT_SECRET",
-                  value: process.env.STREAMER_JWT_SECRET as string,
+                  name: "ROOM_TO_JOIN",
+                  value: roomToCreate,
                 },
               ],
             },
@@ -86,8 +79,23 @@ setInterval(async () => {
           },
         },
       });
+
     }
   }
 }, 1000);
+
+
+
+function signalHandler(signal: any) {
+  console.log(`*^!@4=> Received signal to terminate: ${signal}`);
+
+  redisClient.quit();
+  clearInterval(poller);
+}
+
+process.on("SIGINT", signalHandler);
+process.on("SIGTERM", signalHandler);
+
+
 
 // while (true){}

@@ -1,6 +1,7 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from 'src/app/auth.service';
+import { LoadingService } from 'src/app/loading.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -15,7 +16,7 @@ export class ForgotPasswordComponent implements OnInit {
   public forgotPasswordGroup: FormGroup;
 
 
-  constructor(private auth: AuthService, private formBuilder: FormBuilder) { 
+  constructor(private auth: AuthService, private formBuilder: FormBuilder, private loadingService: LoadingService) { 
     this.modeChange = new EventEmitter();
 
 
@@ -33,6 +34,8 @@ export class ForgotPasswordComponent implements OnInit {
   public onForgotPassword(){
 		this.submitted = true;
 
+    this.loadingService.loading = true;
+
     const {email, captcha} = this.forgotPasswordGroup.controls;
 		
     if(this.forgotPasswordGroup.valid){
@@ -41,6 +44,9 @@ export class ForgotPasswordComponent implements OnInit {
       },
       (err) => {
         this.failed = true;
+      },
+      () => {
+        this.loadingService.loading = false;
       })
     }
 
