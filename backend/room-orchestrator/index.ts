@@ -3,7 +3,11 @@ import { RedisClient } from "redis";
 import { promisify } from "util";
 import { sign } from "jsonwebtoken";
 import { CoreV1Api, KubeConfig } from "@kubernetes/client-node";
+import { interval } from "rxjs";
+
 config();
+
+const MAX_ROOMS = parseInt((process.env.MAX_ROOMS as string) || "100");
 
 const kubeConfig = new KubeConfig();
 
@@ -16,9 +20,7 @@ const redisClient = new RedisClient({
   port: parseInt(process.env.REDIS_PORT as string),
 });
 
-
-
-const poller = setInterval(async () => {
+const poller = interval(1000).subscribe(async () => {
   const poll = await promisify(redisClient.lindex).bind(redisClient)(
     "roomQueue",
     0
@@ -27,7 +29,7 @@ const poller = setInterval(async () => {
   if (poll) {
     const { body } = await k8sAPI.listNamespacedPod("rooms");
 
-    if (body.items.length <= parseInt(process.env.MAX_ROOMS as string)) {
+    if (body.items.length <= MAX_ROOMS) {
       const roomToCreate = await promisify(redisClient.lpop).bind(redisClient)(
         "roomQueue"
       );
@@ -37,8 +39,6 @@ const poller = setInterval(async () => {
         process.env.STREAMER_JWT_SECRET as string,
         { expiresIn: "2h" }
       );
-
-      // create the pod
 
       await k8sAPI.createNamespacedPod("rooms", {
         apiVersion: "apps/v1",
@@ -79,23 +79,18 @@ const poller = setInterval(async () => {
           },
         },
       });
-
     }
   }
-}, 1000);
-
-
+});
 
 function signalHandler(signal: any) {
   console.log(`*^!@4=> Received signal to terminate: ${signal}`);
 
   redisClient.quit();
-  clearInterval(poller);
+  poller.unsubscribe();
 }
 
 process.on("SIGINT", signalHandler);
 process.on("SIGTERM", signalHandler);
-
-
 
 // while (true){}
