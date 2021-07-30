@@ -92,7 +92,7 @@ export class RegisterResolver {
 			})
 
 			return !!newUser;
-		} catch (err) {
+		} catch (err: any) {
 			res.status(400);
 			throw new Error(err);
 		}

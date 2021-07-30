@@ -17,6 +17,7 @@ import {createTransport, createTestAccount} from 'nodemailer';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { graphqlUploadExpress } from 'graphql-upload';
 
 
 
@@ -37,15 +38,17 @@ async function main() {
 		max: 100
 	})
 
+
+	app.use(graphqlUploadExpress({maxFileSize: 1000000, maxFiles: 10}))
 	app.use(json());
-	app.use(helmet())
+	//app.use(helmet())
 	app.use(cookieParser());
 	app.use(cors({origin: "*"}))
-	app.use(csrfProtection);
+	//app.use(csrfProtection);
 	//app.use(rateLimiter)
 	
 	app.use((req, res, next) => {
-		res.cookie('XSRF-TOKEN', req.csrfToken());
+		//res.cookie('XSRF-TOKEN', req.csrfToken());
 		next();
 	})
 
@@ -102,6 +105,7 @@ async function main() {
 		schema,
 		context: ({res, req}) => ({ res: res, req: req, cookies: req?.cookies || {}, prisma, mail }),
 		playground: true,
+		uploads: false
 	});
 
 	server.applyMiddleware({app, path: "/graphql"})
@@ -112,8 +116,6 @@ async function main() {
 	})
 
 
-
-	
 	function signalHandler(signal: any){
 		console.log(`*^!@4=> Received signal to terminate: ${signal}`)
 
@@ -124,7 +126,6 @@ async function main() {
 		server.stop()
 
 	}
-
 
 	process.on("SIGINT", signalHandler)
 	process.on("SIGTERM", signalHandler)

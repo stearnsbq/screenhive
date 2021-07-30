@@ -39,8 +39,6 @@ export class RoomsComponent implements OnInit {
 
   async ngOnInit(){
 
-    
-
     await this.websocketService.connect()
 
     this.logging.info("Connected to Websocket Server!")

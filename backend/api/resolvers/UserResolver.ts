@@ -5,6 +5,10 @@ import { Role } from '../enum/Role';
 import { PrismaClient } from '@prisma/client';
 import { Response } from 'express';
 import argon2 from 'argon2';
+import { GraphQLUpload } from 'graphql-upload';
+import { createWriteStream, existsSync, fstat, mkdirSync, unlinkSync } from 'fs';
+import sharp from 'sharp'
+
 
 @Service()
 @Resolver((of) => User)
@@ -15,8 +19,6 @@ export class UserResolver {
 	public password() {
 		return '';
 	}
-
-
 
 	@FieldResolver(() => [ Report ])
 	public async reports(@Root() user: User, @Ctx() { prisma }: { prisma: PrismaClient }) {
@@ -36,6 +38,54 @@ export class UserResolver {
 		});
 	}
 
+
+	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
+	@Mutation((returns) => Boolean)
+	async uploadAvatar(
+		@Arg('avatar', () => GraphQLUpload) {createReadStream, filename}: any,
+		@Ctx() { user, res, prisma }: { user: any; res: Response; prisma: PrismaClient }
+	) {
+		try{
+
+			const userAvatarFolderLoc = `${process.env.AVATAR_LOCATION as string}/${user.username}/`
+
+			if(!existsSync(userAvatarFolderLoc)){
+				mkdirSync(userAvatarFolderLoc)
+			}
+
+			const result = (await Promise.all([184, 64, 32].map((size) => {
+				return new Promise((resolve, reject) => {
+					createReadStream()
+					.pipe(sharp().resize(size, size).jpeg())
+					.pipe(createWriteStream(`${process.env.AVATAR_LOCATION as string}/${user.username}/avatar-${size}.jpg`, {flags: "w+"}))
+					.on("finish", () => resolve(true))
+					.on("error", (err: any) => reject(err))
+				})
+			})))
+
+
+			if(result.includes(false)){
+				// clean up files if one failed to resize / upload properly
+				unlinkSync(`${userAvatarFolderLoc}/avatar-184.jpg`)
+				unlinkSync(`${userAvatarFolderLoc}/avatar-64.jpg`)
+				unlinkSync(`${userAvatarFolderLoc}/avatar-32.jpg`)
+
+
+				res.status(500)
+				return false;
+			}
+
+			return true;
+		}catch(err: any){
+			res.status(500)
+			throw new Error(err);
+		}
+
+	}
+
+
+
+
 	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
 	@Mutation((returns) => Boolean)
 	async updateUsername(
@@ -53,7 +103,7 @@ export class UserResolver {
 			});
 
 			return !!usr;
-		} catch (err) {
+		} catch (err: any) {
 			res.status(500);
 			throw new Error(err);
 		}
@@ -77,7 +127,7 @@ export class UserResolver {
 			});
 
 			return !!usr;
-		} catch (err) {
+		} catch (err: any) {
 			res.status(500);
 			throw new Error(err);
 		}
@@ -100,7 +150,7 @@ export class UserResolver {
 			});
 
 			return !!usr;
-		} catch (err) {
+		} catch (err: any) {
 			res.status(500);
 			throw new Error(err);
 		}
@@ -128,7 +178,7 @@ export class UserResolver {
 			});
 
 			return !!usr;
-		} catch (err) {
+		} catch (err: any) {
 			res.status(500);
 			throw new Error(err);
 		}
@@ -157,7 +207,7 @@ export class UserResolver {
 					}
 				})) > 0
 			);
-		} catch (err) {
+		} catch (err: any) {
 			res.status(500);
 			throw new Error(err);
 		}
