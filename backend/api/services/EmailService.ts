@@ -44,15 +44,39 @@ export class EmailService{
     }
 
 
-
-    public sendVerifyEmail(email: string, username:string, token: string){
+    private sendMail(email: string, subject: string, html: string){
         return this.mail?.sendMail({
             from: '"Screenhive No Reply" no-reply@screenhive.io',
             to: email,
-            subject: "Please Verify Your Email!",
-            html: render(this.templates["verify-email"], {username, verifyUrl: `http://screenhive.io:4200/verify?token=${token}`})
+            subject,
+            html
         })
     }
+
+    private renderHTML(html: string){
+        return render(this.templates["generic-template"], {content: html})
+    }
+
+    public sendVerifyEmail(email: string, username:string, token: string){
+        const verifyEmailTemplate = render(this.templates["verify-email"], {username, verifyUrl: `http://screenhive.io:4200/verify?token=${token}`});
+        
+        return this.sendMail(email, "Please Verify Your Email!", this.renderHTML(verifyEmailTemplate))
+    }
+
+    public sendResetPassword(email: string, token: string){
+        const resetPasswordTemplate = render(this.templates["reset-password"], {resetUrl: `http://screenhive.io:4200/resetPassword?token=${token}` })
+
+        return this.sendMail(email, "Reset Password Request", this.renderHTML(resetPasswordTemplate))
+    }
+
+    public sendTwoFactor(email: string, otp: string){
+        const twoFactorTemplate = render(this.templates["two-factor"], {otp})
+        
+        return this.sendMail(email, "Two Factor Request", this.renderHTML(twoFactorTemplate))
+    }
+
+
+    
 
 
 }

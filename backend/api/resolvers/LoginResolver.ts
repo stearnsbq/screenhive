@@ -9,18 +9,21 @@ import { Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { authenticator, totp } from 'otplib';
 import { Any } from 'typeorm';
+import { EmailService } from '../services/EmailService';
+import { PrismaService } from '../services/PrismaService';
 
 @Service()
 @Resolver()
 export class LoginResolver {
-	constructor() {}
+	constructor(private emailService : EmailService, private prismaService: PrismaService) {}
 
 	@Query(() => String)
-	async refreshToken(@Ctx() { cookies, res, prisma }: { cookies: any; res: Response; prisma: PrismaClient }) {
+	async refreshToken(@Ctx() { cookies, res }: { cookies: any; res: Response;  }) {
 		try {
 			const token = cookies.refresh_token;
 
-			if ((await prisma.revokedToken.count({ where: { token: token.split('.')[2] } })) > 0) {
+
+			if ((await this.prismaService.revokedToken.count({ where: { token: token.split('.')[2] } })) > 0) {
 				throw new Error('Revoked Token!');
 			}
 
@@ -28,7 +31,7 @@ export class LoginResolver {
 				id: number;
 			};
 
-			const user = (await prisma.user.findUnique({
+			const user = (await this.prismaService.user.findUnique({
 				where: {
 					id: refresh_token.id
 				},
@@ -58,10 +61,10 @@ export class LoginResolver {
 		@Arg('username') username: string,
 		@Arg('password') password: string,
 		@Arg('twoFactor') twoFactor: string,
-		@Ctx() { res, prisma, mail }: { res: Response; prisma: PrismaClient, mail: Transporter<SMTPTransport.SentMessageInfo> }
+		@Ctx() { res }: { res: Response; }
 	) {
 		try {
-			const user = await prisma.user.findUnique({
+			const user = await this.prismaService.user.findUnique({
 				where: {
 					username
 				},
@@ -86,7 +89,7 @@ export class LoginResolver {
 					{ maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: true, /*domain: ".screenhive.io",*/ sameSite: true }
 				);
 
-				await prisma.user.update({
+				await this.prismaService.user.update({
 					where: {
 						username
 					},
@@ -120,12 +123,10 @@ export class LoginResolver {
 		res,
 		cookies,
 		user,
-		prisma
 	}: {
 		res: Response;
 		cookies: any;
 		user: any;
-		prisma: PrismaClient;
 	}) {
 		try {
 			const token = cookies.refresh_token;
@@ -135,7 +136,7 @@ export class LoginResolver {
 
 			return (
 				decoded &&
-				!!await prisma.revokedToken.create({
+				!!await this.prismaService.revokedToken.create({
 					data: {
 						token: token.split('.')[2],
 						expiry: new Date(decoded.exp * 1000)
@@ -150,7 +151,7 @@ export class LoginResolver {
 
 	@Query(() => Boolean)
 	async resetPassword(
-		@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient },
+		@Ctx() { res }: { res: Response; },
 		@Arg('token') token: string,
 		@Arg('newPassword') newPassword: string
 	) {
@@ -161,7 +162,7 @@ export class LoginResolver {
 
 			const decoded = jsonwebtoken.decode(token) as any;
 
-			await prisma.user.update({
+			await this.prismaService.user.update({
 				where: {
 					email: decoded.email
 				},
@@ -182,29 +183,13 @@ export class LoginResolver {
 		@Ctx()
 		{
 			res,
-			prisma,
-			mail
-		}: { res: Response; prisma: PrismaClient; mail: Transporter<SMTPTransport.SentMessageInfo> },
+		}: { res: Response;},
 		@Arg('email') email: string
 	) {
-		if ((await prisma.user.count({ where: { email } })) > 0) {
+		if ((await this.prismaService.user.count({ where: { email } })) > 0) {
 			const token = jsonwebtoken.sign({ email }, process.env.JWT_SECRET as string, { expiresIn: '1hr' });
 
-			await mail.sendMail({
-				from: '"Screenhive No Reply" no-reply@screenhive.io',
-				to: email,
-				subject: 'Reset Password Request',
-				html: `
-						  <p>
-							To Reset Your Password
-							<a href="https://screenhive.io/passwordreset?=${token}">Click Here!</a>
-							Expires in 1hr
-						  </p>
-						  <p>
-							  If that link doesn't work click here: https://screenhive.io/passwordreset?=${token}
-						  </p>
-						`
-			});
+			await this.emailService.sendResetPassword(email, token)
 		}
 
 		return true;

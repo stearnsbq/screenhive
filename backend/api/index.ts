@@ -64,17 +64,6 @@ async function main() {
 
 	app.set('trust proxy', 1);
 
-	const testAccount = await createTestAccount();
-
-	const mail = createTransport({
-		host: "smtp.ethereal.email",
-		port: 587,
-		secure: false,
-		auth:{
-			user: testAccount.user, 
-			pass: testAccount.pass, 
-		}
-	})
 
 	const schema = await buildSchema({
 		resolvers: [ LoginResolver, RegisterResolver, UserResolver ],
@@ -102,11 +91,10 @@ async function main() {
 		}
 	});
 
-	const prisma = new PrismaClient();
 
 	const server = new ApolloServer({
 		schema,
-		context: ({res, req}) => ({ res: res, req: req, cookies: req?.cookies || {}, prisma, mail }),
+		context: ({res, req}) => ({ res: res, req: req, cookies: req?.cookies || {} }),
 		playground: true,
 		uploads: false
 	});
