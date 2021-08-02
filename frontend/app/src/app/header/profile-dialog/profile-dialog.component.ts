@@ -28,9 +28,7 @@ export class ProfileDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.api.UserInfo().subscribe(({data} : any) => {
-
       this.user = data.user;
-
     })
   }
 
@@ -40,6 +38,12 @@ export class ProfileDialogComponent implements OnInit {
 
   close(){
     this.isOpen = false;
+  }
+
+  uploadAvatar(file){
+    this.api.uploadAvatar(file).subscribe(({data} : any) => {
+      location.reload()
+    })
   }
 
   censorEmail(email: string){

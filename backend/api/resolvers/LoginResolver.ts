@@ -7,6 +7,8 @@ import { Response } from 'express';
 import { Prisma, PrismaClient, User } from '.prisma/client';
 import { Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
+import { authenticator, totp } from 'otplib';
+import { Any } from 'typeorm';
 
 @Service()
 @Resolver()
@@ -54,7 +56,8 @@ export class LoginResolver {
 	async login(
 		@Arg('username') username: string,
 		@Arg('password') password: string,
-		@Ctx() { res, prisma }: { res: Response; prisma: PrismaClient }
+		@Arg('twoFactor') twoFactor: string,
+		@Ctx() { res, prisma, mail }: { res: Response; prisma: PrismaClient, mail: Transporter<SMTPTransport.SentMessageInfo> }
 	) {
 		try {
 			const user = await prisma.user.findUnique({
@@ -66,7 +69,11 @@ export class LoginResolver {
 				}
 			});
 
-			if (user && (await argon2.verify(user.password, password))) {
+			if(!twoFactor && user?.twoFactorEnabled){
+				throw new Error("User has two factor enabled however is missing a code!")
+			}
+
+			if (user && (await argon2.verify(user.password, password)) && authenticator.check(twoFactor, process.env.OTP_SECRET as string)) {
 				res.cookie(
 					'refresh_token',
 					jsonwebtoken.sign({ id: user.id }, process.env.JWT_SECRET as string, {
@@ -99,9 +106,9 @@ export class LoginResolver {
 			}
 
 			throw new Error('Invalid Username or Password');
-		} catch (err) {
+		} catch (err: any) {
 			res.status(401);
-			throw new Error('Invalid Username or Password');
+			throw new Error(err);
 		}
 	}
 

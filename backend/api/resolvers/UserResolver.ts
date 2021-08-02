@@ -38,6 +38,33 @@ export class UserResolver {
 		});
 	}
 
+	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
+	@Mutation((returns) => Boolean)
+	async enable2FA(
+		@Ctx() { user, res, prisma }: { user: any; res: Response; prisma: PrismaClient }
+	) {
+
+			if(!(await prisma.user.count({where: {id: user.id}}) > 1)){
+				res.status(401)
+				throw new Error("User does not exist!")
+			}
+	
+	
+			await prisma.user.update({
+				where:{
+					id: user.id
+				},
+				data:{
+					twoFactorEnabled: true
+				}
+			})
+	
+	
+			return true;
+	}
+
+
+
 
 	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)
 	@Mutation((returns) => Boolean)
@@ -47,17 +74,17 @@ export class UserResolver {
 	) {
 		try{
 
-			const userAvatarFolderLoc = `${process.env.AVATAR_LOCATION as string}/${user.username}/`
+			const userAvatarFolderLoc = `./static/${process.env.AVATAR_LOCATION as string}/${user.username}/`
 
 			if(!existsSync(userAvatarFolderLoc)){
-				mkdirSync(userAvatarFolderLoc)
+				mkdirSync(userAvatarFolderLoc, {recursive: true})
 			}
 
 			const result = (await Promise.all([184, 64, 32].map((size) => {
 				return new Promise((resolve, reject) => {
 					createReadStream()
 					.pipe(sharp().resize(size, size).jpeg())
-					.pipe(createWriteStream(`${process.env.AVATAR_LOCATION as string}/${user.username}/avatar-${size}.jpg`, {flags: "w+"}))
+					.pipe(createWriteStream(`${userAvatarFolderLoc}/avatar-${size}.jpg`, {flags: "w+"}))
 					.on("finish", () => resolve(true))
 					.on("error", (err: any) => reject(err))
 				})
@@ -82,8 +109,6 @@ export class UserResolver {
 		}
 
 	}
-
-
 
 
 	@Authorized<Role>(Role.User, Role.Moderator, Role.Admin, Role.SuperAdmin)

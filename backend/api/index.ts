@@ -41,25 +41,23 @@ async function main() {
 
 	app.use(graphqlUploadExpress({maxFileSize: 1000000, maxFiles: 10}))
 	app.use(json());
-	//app.use(helmet())
+	app.use(helmet())
 	app.use(cookieParser());
 	app.use(cors({origin: "*"}))
-	//app.use(csrfProtection);
+	app.use("/static", express.static("static"))
 	//app.use(rateLimiter)
-	
-	app.use((req, res, next) => {
-		//res.cookie('XSRF-TOKEN', req.csrfToken());
-		next();
-	})
+
+	// app.use(csrfProtection);
+	// app.use((req, res, next) => {
+	// 	res.cookie('XSRF-TOKEN', req.csrfToken());
+	// 	next();
+	// })
 
 	app.get("/csrf", (req, res) => {
 		res.json({})
 	})
 
 	app.set('trust proxy', 1);
-
-
-
 
 	const testAccount = await createTestAccount();
 

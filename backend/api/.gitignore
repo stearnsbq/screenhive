@@ -2,3 +2,5 @@ ormconfig.json
 .env
 **/prisma/migrations
 dist
+avatars
+static

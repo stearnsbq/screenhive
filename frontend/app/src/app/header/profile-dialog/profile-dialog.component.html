@@ -3,7 +3,14 @@
         <div class="dialog">
             <div class="profile-sidenav">
                 <div class="sidenav-header">
-                    <img src="https://via.placeholder.com/100">
+                    <div class="user-avatar-container">
+                        <img class="avatar" src="static/avatars/{{user.username}}/avatar-184.jpg">
+                        <div class="upload-overlay" title="Upload New Avatar!" (click)="avatarUpload.click()">
+                            <img class="upload-icon" src="/assets/icons/upload.svg">
+                            <input #avatarUpload (change)="uploadAvatar($event.target.files[0])" accept=".jpg,.png" hidden type="file">
+                        </div>
+                    </div>
+
                     <h2>{{user.username}}</h2>
                 </div>
                 <div class="divider"></div>

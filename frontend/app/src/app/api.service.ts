@@ -12,15 +12,34 @@ export class ApiService {
     return fetch(environment.csrf);
   }
 
+  public uploadAvatar(file: File){
+    const mutation = gql`
+      mutation uploadAvatar($avatar: Upload!){ 
+        uploadAvatar(avatar: $avatar)
+      }
+    `;
+
+    return this.apollo.mutate({
+      mutation,
+      variables: {
+        avatar: file,
+      },
+      context:{
+        useMultipart: true
+      }
+    });
+
+  }
+
   public checkIfUserNameExists(username: string) {
-    const query = gql`
+    const mutation = gql`
       mutation CheckIfUserExists($username: String!) {
         checkIfUserExists(username: $username)
       }
     `;
 
-    return this.apollo.query({
-      query,
+    return this.apollo.mutate({
+      mutation,
       variables: {
         username,
       },

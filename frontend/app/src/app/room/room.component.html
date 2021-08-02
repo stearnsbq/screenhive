@@ -12,10 +12,12 @@
         <div class="room-users" *ngIf="room">
             <ul class="user-list">
                 <li class="self">
-                    <img src="https://via.placeholder.com/75" />
+                    <img src="static/avatars/{{auth.user().username}}/avatar-184.jpg" />
                 </li>
-                <li class="user-list-divider"></li>
-                <li *ngFor="let user of room.users">{{user}}</li>
+                <ng-container *ngIf="room.users.length > 0">
+                    <li class="user-list-divider"></li>
+                    <li *ngFor="let user of room.users">{{user}}</li>
+                </ng-container>
             </ul>
         </div>
         <div class="video-controls">
@@ -41,7 +43,7 @@
 
                     <div class="message-chat" *ngSwitchCase="MessageType.Chat">
                         <div class="avatar">
-                            <img src="https://via.placeholder.com/50x50" />
+                            <img src="static/avatars/{{message.user}}/avatar-64.jpg" />
                         </div>
                         <div class="messsage-content">
                             <div class="head">

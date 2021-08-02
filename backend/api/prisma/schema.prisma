@@ -12,9 +12,6 @@ datasource db {
 }
 
 
-
-
-
 model User{
   id Int @id @default(autoincrement())
   username String @db.VarChar(50) @unique
@@ -23,6 +20,7 @@ model User{
   dob DateTime @db.Date
   registered DateTime @db.Date
   verified Boolean @db.Boolean @default(false)
+  twoFactorEnabled Boolean @db.Boolean @default(false)
   lastLogin DateTime @db.Timestamp()
   avatar String? @db.VarChar(255)
   premiumSubscriptions PremiumSubscription[]
@@ -71,4 +69,10 @@ model Role{
   id Int @id
   name String @db.VarChar(50)
   users User[] 
+}
+
+
+model Permission{
+  id Int @id
+  name String @db.VarChar(50)
 }
