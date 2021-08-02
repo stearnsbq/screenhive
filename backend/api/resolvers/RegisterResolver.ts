@@ -8,13 +8,19 @@ import argon2 from 'argon2'
 import {verify} from 'hcaptcha';
 import { Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import ejs from 'ejs';
+import { EmailService } from '../services/EmailService';
 
 
 
 @Service()
 @Resolver()
 export class RegisterResolver {
-	constructor() {}
+	constructor(private emailService: EmailService) {
+		
+	}
 
 	@Mutation((returns) => Boolean)
 	public async verify(@Arg('token') token: string, @Ctx() { prisma, res }: { prisma: PrismaClient; res: Response }) {
@@ -76,20 +82,7 @@ export class RegisterResolver {
 				{ expiresIn: '5hr' }
 			);
 
-			await mail.sendMail({
-				from: '"Screenhive No Reply" no-reply@screenhive.io',
-				to: email,
-				subject: "Please Verify Your Email!",
-				html:`
-				      <p>
-						To Verify Your Account 
-						<a href="https://screenhive.io/verify?=${verificationToken}">Click Here!</a>
-					  </p>
-					  <p>
-					  	If that link doesn't work click here: https://screenhive.io/verify?=${verificationToken}
-					  </p>
-				    `
-			})
+			await this.emailService.sendVerifyEmail(email, username, verificationToken)
 
 			return !!newUser;
 		} catch (err: any) {

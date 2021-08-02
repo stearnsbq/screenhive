@@ -7,9 +7,9 @@ import { LoggedInGuard } from './logged-in.guard';
 const routes: Routes = [
   {path: '', loadChildren: () => import('./landing/landing.module').then(m => m.LandingModule), canActivate: [LoggedInGuard] },
   {path: "rooms", canActivate: [AuthGuard], loadChildren: () => import('./rooms/rooms.module').then(m => m.RoomsModule)},
-  {path: "room/:id", canActivate: [AuthGuard], loadChildren: () => import('./room/room.module').then(m => m.RoomModule) }
-]
-;
+  {path: "room/:id", canActivate: [AuthGuard], loadChildren: () => import('./room/room.module').then(m => m.RoomModule) },
+  {path: "verify", canActivate: [LoggedInGuard], loadChildren: () => import('./verify/verify.module').then(m => m.VerifyModule)}
+];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

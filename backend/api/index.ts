@@ -18,6 +18,8 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { graphqlUploadExpress } from 'graphql-upload';
+import { resolve } from 'path';
+import { readdirSync } from 'fs';
 
 
 
@@ -52,6 +54,9 @@ async function main() {
 	// 	res.cookie('XSRF-TOKEN', req.csrfToken());
 	// 	next();
 	// })
+
+
+
 
 	app.get("/csrf", (req, res) => {
 		res.json({})
