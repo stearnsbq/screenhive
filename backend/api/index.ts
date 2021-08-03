@@ -110,12 +110,9 @@ async function main() {
 	function signalHandler(signal: any){
 		console.log(`*^!@4=> Received signal to terminate: ${signal}`)
 
-		prisma.$disconnect();
-
 		httpServer.close()
 
 		server.stop()
-
 	}
 
 	process.on("SIGINT", signalHandler)

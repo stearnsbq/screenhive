@@ -10,7 +10,6 @@ export class PrismaService{
         this.prisma = new PrismaClient();
     }
 
-
     get user(){
         return this.prisma.user;
     }
