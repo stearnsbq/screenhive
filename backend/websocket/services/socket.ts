@@ -79,7 +79,7 @@ export class SocketService{
     
                         const sdp = json.data;
     
-                        this.io.to((socket as any).roomID).emit("video-offer", {sdp})
+                        this.io.to(roomID).emit("video-offer", {sdp})
     
                         socket.write(JSON.stringify({event: "video-offer-success"}))
 
